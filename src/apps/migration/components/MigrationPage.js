@@ -1,8 +1,10 @@
+// components/MigrationPage.js
 import React from 'react';
 import apiFetch from '@wordpress/api-fetch';
 import { Spinner } from '@wordpress/components';
 
 const MigrationPage = ({ selectedSubscriptions, selectedOriginPayment, selectedDestinationPayment, testResults, setTestResults, goToNextStep, goToPreviousStep, setMigrationResults, isLoading, setIsLoading }) => {
+
     const handleTest = () => {
         setIsLoading(true);
         apiFetch({
@@ -17,7 +19,10 @@ const MigrationPage = ({ selectedSubscriptions, selectedOriginPayment, selectedD
                 selectedDestinationPayment,
             },
         })
-        .then((response) => setTestResults(response.data))
+        .then((response) => {
+            // Assuming response.data is the array of subscription test results
+            setTestResults(response.data);
+        })
         .catch((error) => console.error('Error running test:', error))
         .finally(() => setIsLoading(false));
     };
@@ -47,22 +52,38 @@ const MigrationPage = ({ selectedSubscriptions, selectedOriginPayment, selectedD
     return (
         <div>
             <h2>Test Migration</h2>
-            {isLoading ? (
-                <Spinner />
-            ) : (
-                <>
-                    <button onClick={handleTest}>Test</button>
-                    <div>
-                        {testResults.map((result, index) => (
-                            <p key={index} style={{ color: result.success ? 'green' : 'red' }}>
-                                {result.subscription}: {result.message}
+            <button onClick={handleTest} disabled={isLoading}>
+                {isLoading ? <Spinner /> : 'Test'}
+            </button>
+            <div>
+                {selectedSubscriptions.length > 0 ? (
+                    selectedSubscriptions.map((subscription, index) => {
+                        // `subscription` now contains both `id` and `name`
+                        const result = testResults.find(res => res.id === subscription.id);
+                        const statusText = result ? result.message : "Pending test";
+                        const statusColor = result ? (result.success ? 'green' : 'red') : 'gray';
+                        const subscriptionName = result ? result.name : subscription.name;
+
+                        return (
+                            <p 
+                                key={index} 
+                                style={{ 
+                                    color: statusColor, 
+                                    opacity: result ? 1 : 0.5 // Grayed out if not tested yet
+                                }}
+                            >
+                                {`${subscriptionName} - ${statusText}`}
                             </p>
-                        ))}
-                    </div>
-                    <button onClick={goToPreviousStep}>Previous</button>
-                    <button onClick={handleRun} disabled={testResults.filter(res => res.success).length === 0}>Run Migration</button>
-                </>
-            )}
+                        );
+                    })
+                ) : (
+                    <p>No subscriptions selected for migration</p>
+                )}
+            </div>
+            <button onClick={goToPreviousStep}>Previous</button>
+            <button onClick={handleRun} disabled={testResults.filter(res => res.success).length === 0 || isLoading}>
+                {isLoading ? <Spinner /> : 'Run Migration'}
+            </button>
         </div>
     );
 };

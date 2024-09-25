@@ -20,15 +20,17 @@ const SubscriptionsPage = ({ selectedOriginPayment, subscriptions, setSubscripti
         if (selectedSubscriptions.length === subscriptions.length) {
             setSelectedSubscriptions([]);
         } else {
-            setSelectedSubscriptions(subscriptions.map(sub => sub.id));
+            // Map each subscription to an object containing id and name
+            setSelectedSubscriptions(subscriptions.map(sub => ({ id: sub.id, name: sub.name })));
         }
     };
 
-    const handleCheckboxChange = (subscriptionId) => {
-        if (selectedSubscriptions.includes(subscriptionId)) {
-            setSelectedSubscriptions(selectedSubscriptions.filter(id => id !== subscriptionId));
+    const handleCheckboxChange = (subscription) => {
+        const exists = selectedSubscriptions.find(sub => sub.id === subscription.id);
+        if (exists) {
+            setSelectedSubscriptions(selectedSubscriptions.filter(sub => sub.id !== subscription.id));
         } else {
-            setSelectedSubscriptions([...selectedSubscriptions, subscriptionId]);
+            setSelectedSubscriptions([...selectedSubscriptions, { id: subscription.id, name: subscription.name }]);
         }
     };
 
@@ -53,8 +55,8 @@ const SubscriptionsPage = ({ selectedOriginPayment, subscriptions, setSubscripti
                                 <label key={subscription.id}>
                                     <input
                                         type="checkbox"
-                                        checked={selectedSubscriptions.includes(subscription.id)}
-                                        onChange={() => handleCheckboxChange(subscription.id)}
+                                        checked={selectedSubscriptions.some(sub => sub.id === subscription.id)}
+                                        onChange={() => handleCheckboxChange(subscription)}
                                     />
                                     {subscription.name}
                                 </label>

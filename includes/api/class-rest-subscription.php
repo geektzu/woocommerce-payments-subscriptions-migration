@@ -82,17 +82,20 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		
 		$subscriptions = array(
 			array(
-				'subscription' => "Subscription 1",
+				'id'		   => "sub_1",
+				'name'         => "Subscription 1",
 				'message' 	   => "DEU!",
 				'success'	   => true,
 			),
 			array(
-				'subscription' => "Subscription 2",
+				'id'		   => "sub_2",
+				'name'         => "Subscription 2",
 				'message' 	   => "NAO DEU!",
 				'success'	   => false,
 			),
 			array(
-				'subscription' => "Subscription 3",
+				'id'		   => "sub_3",
+				'name' 		   => "Subscription 3",
 				'message' 	   => "DEU!",
 				'success'	   => true,
 			)
@@ -111,17 +114,20 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		
 		$subscriptions = array(
 			array(
-				'subscription' => "Subscription 1",
+				'id'		   => "sub_1",
+				'name' 		   => "Subscription 1",
 				'message' 	   => "DEU!",
 				'success'	   => true,
 			),
 			array(
-				'subscription' => "Subscription 2",
+				'id'		   => "sub_2",
+				'name' 		   => "Subscription 2",
 				'message' 	   => "NAO DEU!",
 				'success'	   => false,
 			),
 			array(
-				'subscription' => "Subscription 3",
+				'id'		   => "sub_3",
+				'name' 		   => "Subscription 3",
 				'message' 	   => "DEU!",
 				'success'	   => true,
 			)

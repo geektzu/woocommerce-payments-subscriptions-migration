@@ -12,7 +12,7 @@ const Migration = () => {
     const [originPayments, setOriginPayments] = useState([]);
     const [selectedOriginPayment, setSelectedOriginPayment] = useState(null);
     const [subscriptions, setSubscriptions] = useState([]);
-    const [selectedSubscriptions, setSelectedSubscriptions] = useState([]);
+    const [selectedSubscriptions, setSelectedSubscriptions] = useState([]); // Now an array of objects with id and name
     const [destinationPayments, setDestinationPayments] = useState([]);
     const [selectedDestinationPayment, setSelectedDestinationPayment] = useState(null);
     const [testResults, setTestResults] = useState([]);
@@ -82,7 +82,7 @@ const Migration = () => {
             )}
             {step === 4 && (
                 <MigrationPage 
-                    selectedSubscriptions={selectedSubscriptions}
+                    selectedSubscriptions={selectedSubscriptions} // This now contains objects with id and name
                     selectedOriginPayment={selectedOriginPayment}
                     selectedDestinationPayment={selectedDestinationPayment}
                     testResults={testResults}
