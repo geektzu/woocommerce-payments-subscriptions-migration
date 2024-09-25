@@ -83,26 +83,15 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		$origin_pm  	 	= !empty( $params['origin_pm'] ) ? $params['origin_pm'] : '';
 		$destination_pm  	= !empty( $params['destination_pm'] ) ? $params['destination_pm'] : '';
 		
-		$subscriptions = array(
-			array(
-				'id'		   => "sub_1",
-				'name'         => "Subscription 1",
+		$subscriptions = array();
+		foreach ( $sel_subscriptions as $subscription ) {
+			$subscriptions[] = array(
+				'id'		   => $subscription['id'],
+				'name' 		   => $subscription['name'],
 				'message' 	   => "DEU!",
 				'success'	   => true,
-			),
-			array(
-				'id'		   => "sub_2",
-				'name'         => "Subscription 2",
-				'message' 	   => "NAO DEU!",
-				'success'	   => false,
-			),
-			array(
-				'id'		   => "sub_3",
-				'name' 		   => "Subscription 3",
-				'message' 	   => "DEU!",
-				'success'	   => true,
-			)
-		);
+			);
+		} 
 
 		$data = array(
 			'result' => true,
@@ -118,27 +107,16 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		$origin_pm  	 	= !empty( $params['origin_pm'] ) ? $params['origin_pm'] : '';
 		$destination_pm  	= !empty( $params['destination_pm'] ) ? $params['destination_pm'] : '';
 		
-		$subscriptions = array(
-			array(
-				'id'		   => "sub_1",
-				'name' 		   => "Subscription 1",
+		$subscriptions = array();
+		foreach ( $sel_subscriptions as $subscription ) {
+			$subscriptions[] = array(
+				'id'		   => $subscription['id'],
+				'name' 		   => $subscription['name'],
 				'message' 	   => "DEU!",
 				'success'	   => true,
-			),
-			array(
-				'id'		   => "sub_2",
-				'name' 		   => "Subscription 2",
-				'message' 	   => "NAO DEU!",
-				'success'	   => false,
-			),
-			array(
-				'id'		   => "sub_3",
-				'name' 		   => "Subscription 3",
-				'message' 	   => "DEU!",
-				'success'	   => true,
-			)
-		);
-
+			);
+		} 
+		
 		$data = array(
 			'result' => true,
 			'data'	 => $subscriptions,
@@ -148,24 +126,27 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	}
 
 	public function get_subscriptions( $request ) {
-		$params 	= $request->get_params();
-		$origin_pm  = !empty( $params['origin_pm'] ) ? $params['origin_pm'] : '';
+		$params 	   = $request->get_params();
+		$origin_pm     = !empty( $params['origin_pm'] ) ? $params['origin_pm'] : '';
+		$subscriptions = array();
 		
-		$subscriptions = array(
-			array(
-				'id' => 'sub_1',
-				'name' => 'Subscription 1',
-			),
-			array(
-				'id' => 'sub_2',
-				'name' => 'Subscription 2',
-			),
-			array(
-				'id' => 'sub_3',
-				'name' => 'Subscription 3',
-			)
-		);
-
+		if ( class_exists( 'WC_Subscriptions' ) ) {
+			
+			$args = array(
+		        'subscriptions_per_page' => -1,
+		    );
+		
+		    $subscriptions_raw = wcs_get_subscriptions( $args );
+		    foreach ( $subscriptions_raw as $subscription ) {
+			    if ( $subscription->get_payment_method() == $origin_pm ) {
+				    $subscriptions[] = array(
+					    'id' 	=> $subscription->get_id(),
+						'name' 	=> "Subscription #" . $subscription->get_id(),
+				    );
+			    }
+		    }
+		}
+				
 		$data = array(
 			'result' => true,
 			'data'	 => $subscriptions,
@@ -174,7 +155,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 
 		return rest_ensure_response( $data );
 	}
-
+	
 	/**
 	 * Check if a given request has access to get items.
 	 *
