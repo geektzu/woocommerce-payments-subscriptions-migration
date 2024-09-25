@@ -6,7 +6,7 @@ const SubscriptionsPage = ({ selectedOriginPayment, subscriptions, setSubscripti
     useEffect(() => {
         setIsLoading(true);
         apiFetch({ 
-            path: wcpsm_migration_data.endpoints?.get_subscriptions,
+            path: `${wcpsm_migration_data.endpoints?.get_subscriptions}?origin_pm=${selectedOriginPayment}`,
             headers: {
                 'X-WP-Nonce': wcpsm_migration_data.nonce,
             }

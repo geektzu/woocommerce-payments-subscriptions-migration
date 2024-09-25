@@ -79,6 +79,9 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	
 	public function migrate( $request ) {
 		$params = $request->get_params();
+		$sel_subscriptions  = ( !empty( $params['subscriptions'] ) && is_array( $params['subscriptions'] ) ) ? $params['subscriptions'] : array();
+		$origin_pm  	 	= !empty( $params['origin_pm'] ) ? $params['origin_pm'] : '';
+		$destination_pm  	= !empty( $params['destination_pm'] ) ? $params['destination_pm'] : '';
 		
 		$subscriptions = array(
 			array(
@@ -111,6 +114,9 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	
 	public function dry_migrate( $request ) {
 		$params = $request->get_params();
+		$sel_subscriptions  = ( !empty( $params['subscriptions'] ) && is_array( $params['subscriptions'] ) ) ? $params['subscriptions'] : array();
+		$origin_pm  	 	= !empty( $params['origin_pm'] ) ? $params['origin_pm'] : '';
+		$destination_pm  	= !empty( $params['destination_pm'] ) ? $params['destination_pm'] : '';
 		
 		$subscriptions = array(
 			array(
@@ -142,7 +148,8 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	}
 
 	public function get_subscriptions( $request ) {
-		$params = $request->get_params();
+		$params 	= $request->get_params();
+		$origin_pm  = !empty( $params['origin_pm'] ) ? $params['origin_pm'] : '';
 		
 		$subscriptions = array(
 			array(

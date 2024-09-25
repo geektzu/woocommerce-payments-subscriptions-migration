@@ -14,9 +14,9 @@ const MigrationPage = ({ selectedSubscriptions, selectedOriginPayment, selectedD
             },
             method: 'POST',
             data: {
-                selectedSubscriptions,
-                selectedOriginPayment,
-                selectedDestinationPayment,
+                subscriptions: selectedSubscriptions,
+                origin_pm: selectedOriginPayment,
+                destination_pm: selectedDestinationPayment,
             },
         })
         .then((response) => {
@@ -36,9 +36,9 @@ const MigrationPage = ({ selectedSubscriptions, selectedOriginPayment, selectedD
             },
             method: 'POST',
             data: {
-                selectedSubscriptions,
-                selectedOriginPayment,
-                selectedDestinationPayment,
+                subscriptions: selectedSubscriptions,
+                origin_pm: selectedOriginPayment,
+                destination_pm: selectedDestinationPayment,
             },
         })
         .then((response) => {
