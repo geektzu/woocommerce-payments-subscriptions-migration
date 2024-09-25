@@ -24,8 +24,13 @@ const Step1 = ({ originPayments, selectedOriginPayment, setSelectedOriginPayment
 
 const Step2 = ({ selectedOriginPayment, subscriptions, setSubscriptions, selectedSubscriptions, setSelectedSubscriptions, goToNextStep, goToPreviousStep }) => {
     useEffect(() => {
-	    apiFetch({ path: `/sm/subscriptions?pm=${selectedOriginPayment}` })
-	        .then((response) => setSubscriptions(response))
+	    apiFetch({ 
+		    	path: wcpsm_migration_data.endpoints?.get_subscriptions,
+	            headers: {
+					'X-WP-Nonce': wcpsm_migration_data.nonce,
+				} 
+			})
+	        .then((response) => setSubscriptions(response.data))
 	        .catch((error) => console.error('Error fetching subscriptions:', error));
 	}, [selectedOriginPayment]);
 
@@ -74,8 +79,12 @@ const Step2 = ({ selectedOriginPayment, subscriptions, setSubscriptions, selecte
 
 const Step3 = ({ destinationPayments, setDestinationPayments, selectedDestinationPayment, setSelectedDestinationPayment, goToNextStep, goToPreviousStep }) => {
     useEffect(() => {
-	    apiFetch({ path: '/sm/payments/destination' })
-	        .then((response) => setDestinationPayments(response))
+	    apiFetch({ 
+		    	path: wcpsm_migration_data.endpoints?.get_destination_methods,
+	            headers: {
+					'X-WP-Nonce': wcpsm_migration_data.nonce,
+				} })
+	        .then((response) => setDestinationPayments(response.data))
 	        .catch((error) => console.error('Error fetching destination payments:', error));
 	}, []);
 
@@ -102,7 +111,10 @@ const Step3 = ({ destinationPayments, setDestinationPayments, selectedDestinatio
 const Step4 = ({ selectedSubscriptions, selectedOriginPayment, selectedDestinationPayment, testResults, setTestResults, goToNextStep, goToPreviousStep, setMigrationResults }) => {
     const handleTest = () => {
 	    apiFetch({
-	        path: '/sm/subscriptions/test',
+	        path: wcpsm_migration_data.endpoints?.dry_migrate,
+            headers: {
+				'X-WP-Nonce': wcpsm_migration_data.nonce,
+			},
 	        method: 'POST',
 	        data: {
 	            selectedSubscriptions,
@@ -110,13 +122,16 @@ const Step4 = ({ selectedSubscriptions, selectedOriginPayment, selectedDestinati
 	            selectedDestinationPayment,
 	        },
 	    })
-	    .then((response) => setTestResults(response))
+	    .then((response) => setTestResults(response.data))
 	    .catch((error) => console.error('Error running test:', error));
 	};
 
     const handleRun = () => {
 	    apiFetch({
-	        path: '/sm/subscriptions/run',
+	        path: wcpsm_migration_data.endpoints?.migrate,
+            headers: {
+				'X-WP-Nonce': wcpsm_migration_data.nonce,
+			},
 	        method: 'POST',
 	        data: {
 	            selectedSubscriptions,
@@ -125,7 +140,7 @@ const Step4 = ({ selectedSubscriptions, selectedOriginPayment, selectedDestinati
 	        },
 	    })
 	    .then((response) => {
-	        setMigrationResults(response);
+	        setMigrationResults(response.data);
 	        goToNextStep();
 	    })
 	    .catch((error) => console.error('Error running migration:', error));
@@ -173,7 +188,7 @@ const Migration = () => {
     const [migrationResults, setMigrationResults] = useState([]);
     
     console.log( wcpsm_migration_data );
-
+    
     useEffect(() => {
         if (step === 1) {
             // Fetch origin payment methods

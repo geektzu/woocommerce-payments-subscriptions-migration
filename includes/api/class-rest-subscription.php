@@ -79,9 +79,28 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	
 	public function migrate( $request ) {
 		$params = $request->get_params();
+		
+		$subscriptions = array(
+			array(
+				'subscription' => "Subscription 1",
+				'message' 	   => "DEU!",
+				'success'	   => true,
+			),
+			array(
+				'subscription' => "Subscription 2",
+				'message' 	   => "NAO DEU!",
+				'success'	   => false,
+			),
+			array(
+				'subscription' => "Subscription 3",
+				'message' 	   => "DEU!",
+				'success'	   => true,
+			)
+		);
 
 		$data = array(
 			'result' => true,
+			'data'	 => $subscriptions,
 		);
 
 		return rest_ensure_response( $data );
@@ -89,9 +108,28 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	
 	public function dry_migrate( $request ) {
 		$params = $request->get_params();
+		
+		$subscriptions = array(
+			array(
+				'subscription' => "Subscription 1",
+				'message' 	   => "DEU!",
+				'success'	   => true,
+			),
+			array(
+				'subscription' => "Subscription 2",
+				'message' 	   => "NAO DEU!",
+				'success'	   => false,
+			),
+			array(
+				'subscription' => "Subscription 3",
+				'message' 	   => "DEU!",
+				'success'	   => true,
+			)
+		);
 
 		$data = array(
 			'result' => true,
+			'data'	 => $subscriptions,
 		);
 
 		return rest_ensure_response( $data );
@@ -99,10 +137,27 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 
 	public function get_subscriptions( $request ) {
 		$params = $request->get_params();
+		
+		$subscriptions = array(
+			array(
+				'id' => 'sub_1',
+				'name' => 'Subscription 1',
+			),
+			array(
+				'id' => 'sub_2',
+				'name' => 'Subscription 2',
+			),
+			array(
+				'id' => 'sub_3',
+				'name' => 'Subscription 3',
+			)
+		);
 
 		$data = array(
 			'result' => true,
+			'data'	 => $subscriptions,
 		);
+
 
 		return rest_ensure_response( $data );
 	}

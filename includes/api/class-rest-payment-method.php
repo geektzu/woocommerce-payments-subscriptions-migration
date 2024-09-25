@@ -102,8 +102,16 @@ class WCPSM_Rest_Payment_Method extends \WP_REST_Controller {
 	public function get_destination_methods( $request ) {
 		$params = $request->get_params();
 
+		$methods = array(
+			array(
+				'id' => 'woo_pay',
+				'name' => 'Woo Payments',
+			),
+		);
+
 		$data = array(
 			'result' => true,
+			'data'	 => $methods,
 		);
 
 		return rest_ensure_response( $data );
