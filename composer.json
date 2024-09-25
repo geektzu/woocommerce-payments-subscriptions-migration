@@ -1,0 +1,14 @@
+{
+	"name": "sd/sd-scaffold-plugin",
+	"description": "A Composer package for scaffolding a WordPress plugin.",
+	"type": "wordpress-plugin",
+	"require-dev": {
+		"squizlabs/php_codesniffer": "*",
+		"wp-coding-standards/wpcs": "^3.1"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}

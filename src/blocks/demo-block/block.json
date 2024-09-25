@@ -1,0 +1,30 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 2,
+	"title": "Demo Block",
+	"description": "This is a demo block",
+	"textdomain": "sd-scaffold-plugin",
+	"name": "sd/demo-block",
+	"icon": "feedback",
+	"category": "SD",
+	"attributes": {
+		"isDemo": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"supports": {
+		"html": false
+	},
+	"example": {
+		"attributes": {
+			"isDemo": false
+		},
+		"viewportWidth": 1024
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js",
+	"render": "file:./render.php"
+}

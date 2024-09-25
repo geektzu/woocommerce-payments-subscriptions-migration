@@ -1,0 +1,30 @@
+{
+	"name": "woocommerce-payments-subscriptions-migration",
+	"version": "1.6.0",
+	"description": "A migration plugin.",
+	"scripts": {
+		"build": "wp-scripts build",
+		"watch:blocks": "wp-scripts start ",
+		"watch:extensions": "wp-scripts start ./src/apps/migration/index.js --output-path=build-extensions",
+		"watch": "concurrently --kill-others \"npm run watch:blocks\" \"npm run watch:extensions\"",
+		"lint:css": "wp-scripts lint-style",
+		"lint:js": "wp-scripts lint-js",
+		"format:css": "wp-scripts format-style",
+		"format:js": "wp-scripts format-js",
+		"clean": "del-cli build",
+		"dist": "npm run clean && npm run build && rm -f woocommerce-payments-subscriptions-migration.zip && zip -r woocommerce-payments-subscriptions-migration.zip -@ < .distpackage"
+	},
+	"author": "Marcel Schmitz",
+	"license": "ISC",
+	"devDependencies": {
+		"@wordpress/dependency-extraction-webpack-plugin": "^6.7.0",
+		"@wordpress/prettier-config": "^2.15.0",
+		"@wordpress/scripts": "^26.3.0",
+		"cpx": "^1.5.0",
+		"del-cli": "^5.0.0",
+		"glob": "^10.2.2"
+	},
+	"dependencies": {
+		"concurrently": "^9.0.1"
+	}
+}
