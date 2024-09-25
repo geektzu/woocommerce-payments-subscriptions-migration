@@ -17,10 +17,11 @@ const Migration = () => {
     const [selectedDestinationPayment, setSelectedDestinationPayment] = useState(null);
     const [testResults, setTestResults] = useState([]);
     const [migrationResults, setMigrationResults] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (step === 1) {
-            // Fetch origin payment methods
+            setIsLoading(true);
             apiFetch({ 
                 path: wcpsm_migration_data.endpoints?.get_origin_methods,
                 headers: {
@@ -30,7 +31,8 @@ const Migration = () => {
             .then((response) => {
                 setOriginPayments(response.data);
             })
-            .catch((error) => console.error('Error fetching origin payments:', error));
+            .catch((error) => console.error('Error fetching origin payments:', error))
+            .finally(() => setIsLoading(false));
         }
     }, [step]);
 
@@ -50,6 +52,7 @@ const Migration = () => {
                     selectedOriginPayment={selectedOriginPayment}
                     setSelectedOriginPayment={setSelectedOriginPayment}
                     goToNextStep={goToNextStep}
+                    isLoading={isLoading}
                 />
             )}
             {step === 2 && (
@@ -61,6 +64,8 @@ const Migration = () => {
                     setSelectedSubscriptions={setSelectedSubscriptions}
                     goToNextStep={goToNextStep}
                     goToPreviousStep={goToPreviousStep}
+                    isLoading={isLoading}
+                    setIsLoading={setIsLoading}
                 />
             )}
             {step === 3 && (
@@ -71,6 +76,8 @@ const Migration = () => {
                     setSelectedDestinationPayment={setSelectedDestinationPayment}
                     goToNextStep={goToNextStep}
                     goToPreviousStep={goToPreviousStep}
+                    isLoading={isLoading}
+                    setIsLoading={setIsLoading}
                 />
             )}
             {step === 4 && (
@@ -83,6 +90,8 @@ const Migration = () => {
                     goToNextStep={goToNextStep}
                     goToPreviousStep={goToPreviousStep}
                     setMigrationResults={setMigrationResults}
+                    isLoading={isLoading}
+                    setIsLoading={setIsLoading}
                 />
             )}
             {step === 5 && (
