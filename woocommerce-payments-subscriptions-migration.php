@@ -31,7 +31,7 @@ if ( ! class_exists( 'wcpay_subscriptions_migration' ) ) {
 			add_action( 'plugins_loaded', array( $this, 'includes' ), 12 );
 
 			// Register extensions
-			add_action( 'init', array( $this, 'register_extensions' ) );
+			add_action( 'admin_enqueue_scripts', array( $this, 'register_extensions' ) );
 
 			// Add plugin internationalization
 			add_action( 'init', array( $this, 'load_textdomain' ) );
@@ -62,6 +62,12 @@ if ( ! class_exists( 'wcpay_subscriptions_migration' ) ) {
 			} elseif ( ! class_exists( 'WC_Payments' ) ) {
 				add_action( 'admin_notices', array( $this, 'wcpay_error_activation_notice' ) );
 			} else {
+				
+				include_once WCPSM_DIR_PATH . 'includes/api/class-rest.php';
+				include_once WCPSM_DIR_PATH . 'includes/api/class-rest-subscription.php';
+				include_once WCPSM_DIR_PATH . 'includes/api/class-rest-payment-method.php';
+				
+				WCPSM_Rest::get_instance();
 
 				if ( is_admin() ) {
 
@@ -130,6 +136,20 @@ if ( ! class_exists( 'wcpay_subscriptions_migration' ) ) {
 
 			wp_register_script( $name, WCPSM_DIR_URL . 'build-extensions/' . $script . '.js', $asset_file['dependencies'], $asset_file['version'], true );
 			wp_enqueue_script( $name );
+			
+			$rest 	   = WCPSM_Rest::get_instance();
+			$endpoints = $rest->get_api_endpoints();
+			
+			// Localize
+			wp_localize_script(
+				$name,
+				'wcpsm_migration_data',
+				array(
+					'nonce' 	=> wp_create_nonce( 'wp_rest' ),
+					'endpoints' => $endpoints,
+				)
+			);
+			
 
 			wp_register_style( $name, WCPSM_DIR_URL . 'build-extensions/index.css', array(), $asset_file['version'] );
 			wp_enqueue_style( $name );
@@ -148,6 +168,7 @@ if ( class_exists( 'wcpay_subscriptions_migration' ) ) {
 	define( 'WCPSM_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 	define( 'WCPSM_PLUGIN_FILE', __FILE__ );
 	define( 'WCPSM_PLUGIN_VERSION', '1.0' );
+	define( 'WCPSM_PLUGIN_API_BASE', 'wcpsm-api' );
 
 	wcpay_subscriptions_migration::get_instance();
 }
