@@ -74,23 +74,21 @@ class WCPSM_Rest_Payment_Method extends \WP_REST_Controller {
 	}
 	
 	public function get_origin_methods( $request ) {
-		$params = $request->get_params();
+		$params  = $request->get_params();
+		$methods = array();
 		
-		$methods = array(
-			array(
-				'id' => 'stripe',
-				'name' => 'Stripe',
-			),
-			array(
-				'id' => 'elavon',
-				'name' => 'Elavon',
-			),
-			array(
-				'id' => 'authorize',
-				'name' => 'Authorize.net',
-			)
-		);
-
+		if ( function_exists( 'WC' ) ) {
+			$payment_gateways = WC()->payment_gateways->payment_gateways;
+			foreach ( $payment_gateways as $gateway ) {
+				if ( in_array( $gateway->id, array( 'authorize_net_cim_credit_card', 'stripe', 'elavon_converge_credit_card' ) ) ) {
+			        $methods[] = array(
+			            'id'   => $gateway->id,
+			            'name' => $gateway->get_method_title(),
+			        );
+		        }
+		    }
+		}
+		
 		$data = array(
 			'result' => true,
 			'data'	 => $methods,
@@ -101,13 +99,19 @@ class WCPSM_Rest_Payment_Method extends \WP_REST_Controller {
 	
 	public function get_destination_methods( $request ) {
 		$params = $request->get_params();
-
-		$methods = array(
-			array(
-				'id' => 'woo_pay',
-				'name' => 'Woo Payments',
-			),
-		);
+		$methods = array();
+		
+		if ( function_exists( 'WC' ) ) {
+			$payment_gateways = WC()->payment_gateways->payment_gateways;
+			foreach ( $payment_gateways as $gateway ) {
+				if ( in_array( $gateway->id, array( 'woocommerce_payments' ) ) ) {
+			        $methods[] = array(
+			            'id'   => $gateway->id,
+			            'name' => $gateway->get_method_title(),
+			        );
+		        }
+		    }
+		}
 
 		$data = array(
 			'result' => true,
