@@ -147,6 +147,7 @@ if ( ! class_exists( 'wcpay_subscriptions_migration' ) ) {
 				array(
 					'nonce' 	=> wp_create_nonce( 'wp_rest' ),
 					'endpoints' => $endpoints,
+					'per_page'  => 5,
 				)
 			);
 			

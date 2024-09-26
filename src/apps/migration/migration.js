@@ -43,7 +43,7 @@ const Migration = () => {
     const goToPreviousStep = () => {
         setStep(step - 1);
     };
-
+    
     return (
         <div>
             {step === 1 && (
