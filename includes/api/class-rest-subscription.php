@@ -85,11 +85,12 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		
 		$subscriptions = array();
 		foreach ( $sel_subscriptions as $subscription ) {
+			$result = ( $subscription['id'] * 1 ) % 3 == 0 ? true : false;
 			$subscriptions[] = array(
 				'id'		   => $subscription['id'],
 				'name' 		   => $subscription['name'],
-				'message' 	   => "DEU!",
-				'success'	   => true,
+				'message' 	   => $result ? "Success!" : "Failed!",
+				'success'	   => $result,
 			);
 		} 
 
@@ -109,11 +110,12 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		
 		$subscriptions = array();
 		foreach ( $sel_subscriptions as $subscription ) {
+			$result = ( $subscription['id'] * 1 ) % 3 == 0 ? true : false;
 			$subscriptions[] = array(
 				'id'		   => $subscription['id'],
 				'name' 		   => $subscription['name'],
-				'message' 	   => "DEU!",
-				'success'	   => true,
+				'message' 	   => $result ? "Success!" : "Failed!",
+				'success'	   => $result,
 			);
 		} 
 		
