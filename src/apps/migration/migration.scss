@@ -1,3 +1,81 @@
 svg.components-checkbox-control__checked {
-    display: none !important;
+	display: none !important;
+}
+
+.wpsm-migration-wrapper {
+	* {
+		box-sizing: border-box;
+	}
+
+	margin-top: 2rem;
+	height: 400px;
+	max-width: 800px;
+	padding: 2rem;
+	background-color: white;
+	border-radius: 5px;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+	.wpsm-migration-page {
+		display: flex;
+		flex-direction: column;
+		align-items: start;
+		justify-content: start;
+		height: 100%;
+		h2 {
+			margin: 0 0 1rem 0;
+		}
+		p {
+			margin: 0 0 1rem 0;
+			font-size: 1rem;
+			&.text-muted {
+				color: #666;
+			}
+			&.text-footer {
+				font-size: 0.75rem;
+				margin: 0;
+			}
+		}
+
+		.wpsm-migration-page__checkbox_list {
+			background-color: #f3f3f3;
+			padding: 1rem;
+			border-radius: 5px;
+			width: 100%;
+			height: 100%;
+			display: flex;
+			flex-direction: column;
+			overflow: hidden;
+
+			.wpsm-migration-page__checkbox_list_top,
+			.wpsm-migration-page__checkbox_list_bottom {
+				flex-shrink: 0;
+			}
+			.wpsm-migration-page__checkbox_list_middle {
+				flex-grow: 1; /* Allow the middle div to take available space */
+				overflow-y: auto;
+			}
+		}
+
+		.psm-migration-page__pagination {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			gap: 1rem;
+			padding: 1rem;
+			border-radius: 5px;
+			width: 100%;
+		}
+
+		.wpsm-migration-page__actions {
+			margin-top: auto;
+			width: 100%;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+
+			:last-child {
+				margin-left: auto;
+			}
+		}
+	}
 }

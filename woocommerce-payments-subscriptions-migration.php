@@ -62,11 +62,11 @@ if ( ! class_exists( 'wcpay_subscriptions_migration' ) ) {
 			} elseif ( ! class_exists( 'WC_Payments' ) ) {
 				add_action( 'admin_notices', array( $this, 'wcpay_error_activation_notice' ) );
 			} else {
-				
+
 				include_once WCPSM_DIR_PATH . 'includes/api/class-rest.php';
 				include_once WCPSM_DIR_PATH . 'includes/api/class-rest-subscription.php';
 				include_once WCPSM_DIR_PATH . 'includes/api/class-rest-payment-method.php';
-				
+
 				WCPSM_Rest::get_instance();
 
 				if ( is_admin() ) {
@@ -136,24 +136,26 @@ if ( ! class_exists( 'wcpay_subscriptions_migration' ) ) {
 
 			wp_register_script( $name, WCPSM_DIR_URL . 'build-extensions/' . $script . '.js', $asset_file['dependencies'], $asset_file['version'], true );
 			wp_enqueue_script( $name );
-			
-			$rest 	   = WCPSM_Rest::get_instance();
+
+			$rest      = WCPSM_Rest::get_instance();
 			$endpoints = $rest->get_api_endpoints();
-			
+
 			// Localize
 			wp_localize_script(
 				$name,
 				'wcpsm_migration_data',
 				array(
-					'nonce' 	=> wp_create_nonce( 'wp_rest' ),
+					'nonce'     => wp_create_nonce( 'wp_rest' ),
 					'endpoints' => $endpoints,
-					'per_page'  => 5,
+					'per_page'  => 10,
 				)
 			);
-			
 
 			wp_register_style( $name, WCPSM_DIR_URL . 'build-extensions/index.css', array(), $asset_file['version'] );
 			wp_enqueue_style( $name );
+
+			// Enqueue block editor styles.
+			wp_enqueue_style( 'wp-edit-blocks' );
 		}
 	}
 }
