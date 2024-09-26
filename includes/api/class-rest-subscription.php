@@ -124,6 +124,42 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 
 		return rest_ensure_response( $data );
 	}
+	
+	private function get_subscriptions_by_payment_method( $method ) {
+		
+		$subscriptions   = array();
+		$is_hpos_enabled = 'WC_Order_Data_Store_CPT' !== get_option('woocommerce_subscriptions_order_data_store');
+		
+		if ( $is_hpos_enabled ) {
+			global $wpdb;
+			$table_name = $wpdb->prefix . 'wc_orders';
+		    $query 		= $wpdb->prepare(
+		        "SELECT * FROM $table_name WHERE type = %s AND payment_method = %s",
+		        'shop_subscription',
+		        $method
+		    );
+		    
+		    $subscriptions = $wpdb->get_col( $query );
+		} else {		    
+		    $args = array(
+		        'post_type'      => 'shop_subscription',
+		        'posts_per_page' => -1,
+		        'fields'		 => 'ids',
+		        'post_status'    => array_keys( wcs_get_subscription_statuses() ),
+		        'meta_query'     => array(
+		            array(
+		                'key'     => '_payment_method', // Meta key for payment method
+		                'value'   => $method,
+		                'compare' => '='
+		            ),
+		        ),
+		    );
+		
+		    $subscriptions = get_posts( $args );
+	    }
+	    
+	    return $subscriptions;
+	}
 
 	public function get_subscriptions( $request ) {
 		$params 	   = $request->get_params();
@@ -131,19 +167,13 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		$subscriptions = array();
 		
 		if ( class_exists( 'WC_Subscriptions' ) ) {
-			
-			$args = array(
-		        'subscriptions_per_page' => -1,
-		    );
-		
-		    $subscriptions_raw = wcs_get_subscriptions( $args );
-		    foreach ( $subscriptions_raw as $subscription ) {
-			    if ( $subscription->get_payment_method() == $origin_pm ) {
-				    $subscriptions[] = array(
-					    'id' 	=> $subscription->get_id(),
-						'name' 	=> "Subscription #" . $subscription->get_id(),
-				    );
-			    }
+					
+		    $subscriptions_ids = $this->get_subscriptions_by_payment_method( $origin_pm );
+		    foreach ( $subscriptions_ids as $subscription_id ) {
+			    $subscriptions[] = array(
+				    'id' 	=> $subscription_id,
+					'name' 	=> "Subscription #" . $subscription_id,
+			    );
 		    }
 		}
 				
