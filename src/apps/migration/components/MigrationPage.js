@@ -1,7 +1,6 @@
-// components/MigrationPage.js
 import React from 'react';
 import apiFetch from '@wordpress/api-fetch';
-import { Spinner } from '@wordpress/components';
+import { Spinner, Button } from '@wordpress/components';
 
 const MigrationPage = ({ selectedSubscriptions, selectedOriginPayment, selectedDestinationPayment, testResults, setTestResults, goToNextStep, goToPreviousStep, setMigrationResults, isLoading, setIsLoading }) => {
 
@@ -52,9 +51,9 @@ const MigrationPage = ({ selectedSubscriptions, selectedOriginPayment, selectedD
     return (
         <div>
             <h2>Test Migration</h2>
-            <button onClick={handleTest} disabled={isLoading}>
+            <Button className="button button-tertiary" onClick={handleTest} disabled={isLoading}>
                 {isLoading ? <Spinner /> : 'Test'}
-            </button>
+            </Button>
             <div>
                 {selectedSubscriptions.length > 0 ? (
                     selectedSubscriptions.map((subscription, index) => {
@@ -80,10 +79,10 @@ const MigrationPage = ({ selectedSubscriptions, selectedOriginPayment, selectedD
                     <p>No subscriptions selected for migration</p>
                 )}
             </div>
-            <button onClick={goToPreviousStep}>Previous</button>
-            <button onClick={handleRun} disabled={testResults.filter(res => res.success).length === 0 || isLoading}>
+            <Button className="button button-secondary" onClick={goToPreviousStep}>Previous</Button>
+            <Button className="button button-primary" onClick={handleRun} disabled={testResults.filter(res => res.success).length === 0 || isLoading}>
                 {isLoading ? <Spinner /> : 'Run Migration'}
-            </button>
+            </Button>
         </div>
     );
 };

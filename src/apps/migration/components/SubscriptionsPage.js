@@ -1,19 +1,21 @@
 import React, { useEffect } from 'react';
 import apiFetch from '@wordpress/api-fetch';
-import { Spinner } from '@wordpress/components';
+import { Spinner, CheckboxControl, Button } from '@wordpress/components';
 
 const SubscriptionsPage = ({ selectedOriginPayment, subscriptions, setSubscriptions, selectedSubscriptions, setSelectedSubscriptions, goToNextStep, goToPreviousStep, isLoading, setIsLoading }) => {
     useEffect(() => {
-        setIsLoading(true);
-        apiFetch({ 
-            path: `${wcpsm_migration_data.endpoints?.get_subscriptions}?origin_pm=${selectedOriginPayment}`,
-            headers: {
-                'X-WP-Nonce': wcpsm_migration_data.nonce,
-            }
-        })
-        .then((response) => setSubscriptions(response.data))
-        .catch((error) => console.error('Error fetching subscriptions:', error))
-        .finally(() => setIsLoading(false));
+        if (selectedOriginPayment) {
+            setIsLoading(true);
+            apiFetch({ 
+                path: `${wcpsm_migration_data.endpoints?.get_subscriptions}?origin_pm=${selectedOriginPayment}`,
+                headers: {
+                    'X-WP-Nonce': wcpsm_migration_data.nonce,
+                }
+            })
+            .then((response) => setSubscriptions(response.data))
+            .catch((error) => console.error('Error fetching subscriptions:', error))
+            .finally(() => setIsLoading(false));
+        }
     }, [selectedOriginPayment]);
 
     const handleSelectAll = () => {
@@ -43,30 +45,25 @@ const SubscriptionsPage = ({ selectedOriginPayment, subscriptions, setSubscripti
                 <>
                     {subscriptions.length > 0 ? (
                         <>
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={selectedSubscriptions.length === subscriptions.length}
-                                    onChange={handleSelectAll}
-                                />
-                                Select All
-                            </label>
+                            <CheckboxControl
+                                label="Select All"
+                                checked={selectedSubscriptions.length === subscriptions.length}
+                                onChange={handleSelectAll}
+                            />
                             {subscriptions.map(subscription => (
-                                <label key={subscription.id}>
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedSubscriptions.some(sub => sub.id === subscription.id)}
-                                        onChange={() => handleCheckboxChange(subscription)}
-                                    />
-                                    {subscription.name}
-                                </label>
+                                <CheckboxControl
+                                    key={subscription.id}
+                                    label={subscription.name}
+                                    checked={selectedSubscriptions.some(sub => sub.id === subscription.id)}
+                                    onChange={() => handleCheckboxChange(subscription)}
+                                />
                             ))}
                         </>
                     ) : (
                         <p>No subscriptions with {selectedOriginPayment}</p>
                     )}
-                    <button onClick={goToPreviousStep}>Previous</button>
-                    <button onClick={goToNextStep} disabled={selectedSubscriptions.length === 0}>Next</button>
+                    <Button className="button button-secondary" onClick={goToPreviousStep}>Previous</Button>
+                    <Button className="button button-primary" onClick={goToNextStep} disabled={selectedSubscriptions.length === 0}>Next</Button>
                 </>
             )}
         </div>

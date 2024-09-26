@@ -1,5 +1,5 @@
 import React from 'react';
-import { Spinner } from '@wordpress/components';
+import { Spinner, RadioControl, Button } from '@wordpress/components';
 
 const OriginPaymentPage = ({ originPayments, selectedOriginPayment, setSelectedOriginPayment, goToNextStep, isLoading }) => {
     return (
@@ -10,21 +10,21 @@ const OriginPaymentPage = ({ originPayments, selectedOriginPayment, setSelectedO
             ) : (
                 <>
                     {originPayments.length > 0 ? (
-                        originPayments.map((payment, index) => (
-                            <label key={index}>
-                                <input
-                                    type="radio"
-                                    value={payment.id}
-                                    checked={selectedOriginPayment === payment.id}
-                                    onChange={() => setSelectedOriginPayment(payment.id)}
-                                />
-                                {payment.name}
-                            </label>
-                        ))
+                        <RadioControl
+                            label="Available Origin Payment Methods"
+                            selected={selectedOriginPayment}
+                            options={originPayments.map((payment) => ({
+                                label: payment.name,
+                                value: payment.id
+                            }))}
+                            onChange={(value) => setSelectedOriginPayment(value)}
+                        />
                     ) : (
                         <p>No available origin payment methods</p>
                     )}
-                    <button onClick={goToNextStep} disabled={!selectedOriginPayment}>Next</button>
+                    <Button className="button button-primary" onClick={goToNextStep} disabled={!selectedOriginPayment}>
+                        Next
+                    </Button>
                 </>
             )}
         </div>

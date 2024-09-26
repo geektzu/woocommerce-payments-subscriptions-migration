@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import apiFetch from '@wordpress/api-fetch';
-import { Spinner } from '@wordpress/components';
+import { Spinner, RadioControl, Button } from '@wordpress/components';
 
 const DestinationPaymentPage = ({ destinationPayments, setDestinationPayments, selectedDestinationPayment, setSelectedDestinationPayment, goToNextStep, goToPreviousStep, isLoading, setIsLoading }) => {
     useEffect(() => {
@@ -24,22 +24,20 @@ const DestinationPaymentPage = ({ destinationPayments, setDestinationPayments, s
             ) : (
                 <>
                     {destinationPayments.length > 0 ? (
-                        destinationPayments.map((payment, index) => (
-                            <label key={index}>
-                                <input
-                                    type="radio"
-                                    value={payment.id}
-                                    checked={selectedDestinationPayment === payment.id}
-                                    onChange={() => setSelectedDestinationPayment(payment.id)}
-                                />
-                                {payment.name}
-                            </label>
-                        ))
+                        <RadioControl
+                            label="Available Destination Payment Methods"
+                            selected={selectedDestinationPayment}
+                            options={destinationPayments.map((payment) => ({
+                                label: payment.name,
+                                value: payment.id
+                            }))}
+                            onChange={(value) => setSelectedDestinationPayment(value)}
+                        />
                     ) : (
                         <p>No available destination payment methods</p>
                     )}
-                    <button onClick={goToPreviousStep}>Previous</button>
-                    <button onClick={goToNextStep} disabled={!selectedDestinationPayment}>Next</button>
+                    <Button className="button button-secondary" onClick={goToPreviousStep}>Previous</Button>
+                    <Button className="button button-primary" onClick={goToNextStep} disabled={!selectedDestinationPayment}>Next</Button>
                 </>
             )}
         </div>
