@@ -146,7 +146,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	    $header = str_getcsv( array_shift( $lines ) );
 	
 	    $required_headers = array( 'customer_id_old', 'source_id_old', 'customer_id_new', 'source_id_new' );
-	    if ($header !== $required_headers) {
+	    if ( $header !== $required_headers ) {
 	        return array();
 	    }
 	
