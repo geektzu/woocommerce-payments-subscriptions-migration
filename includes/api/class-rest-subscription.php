@@ -117,22 +117,22 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		$origin_pm  	 	= !empty( $params['origin_pm'] ) ? $params['origin_pm'] : '';
 		$destination_pm  	= !empty( $params['destination_pm'] ) ? $params['destination_pm'] : '';
 		
-		$subscriptions_prc 	= $this->get_subscription_data( $sel_subscriptions, $origin_pm );
+		$subscriptions_prc 	= $this->get_subscription_data( $sel_subscriptions, $origin_pm, $destination_pm );
 		$subscriptions 		= array();
 		foreach ( $subscriptions_prc as $subscription ) {
 			$subscriptions[] = array(
 				'id'		   => $subscription['id'],
 				'name' 		   => $subscription['name'],
-				'message' 	   => $subscription['result'] ? "Success!" : "Failed!",
+				'message' 	   => $subscription['message'],
 				'success'	   => $subscription['result'],
 			);
-		} 
+		}
 		
 		$data = array(
 			'result' => true,
 			'data'	 => $subscriptions,
 		);
-
+		
 		return rest_ensure_response( $data );
 	}
 	
@@ -168,88 +168,109 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		return '';
 	}
 	
-	private function get_subscription_data( $subscriptions_raw, $origin_pm ) {
-	    $subscriptions   = array();
-	    $source_key   	 = $this->get_source_key( $origin_pm );
-	    $customer_id_key = $this->get_customer_id_key( $origin_pm );
+	private function get_subscription_data( $subscriptions_raw, $origin_pm, $destination_pm ) {
+		$subscriptions   = array();
+		$source_key   	 = $this->get_source_key( $origin_pm );
+		$customer_id_key = $this->get_customer_id_key( $origin_pm );
 	
-	    // Get the current user's ID
-	    $user_id = get_current_user_id();
-	    if ( !$user_id ) {
-	        return $subscriptions;
-	    }
+		// Get the current user's ID
+		$user_id = get_current_user_id();
+		if ( !$user_id ) {
+			return $subscriptions;
+		}
 	
-	    // Define the path to the saved CSV file
-	    $csv_file_path = WCPSM_DIR_PATH . "/assets/csv/subscription_migration_${user_id}.csv";
+		// Define the path to the saved CSV file
+		$csv_file_path = WCPSM_DIR_PATH . "/assets/csv/subscription_migration_${user_id}.csv";
 	
-	    // Check if the file exists
-	    if ( !file_exists( $csv_file_path ) ) {
-	        return $subscriptions;
-	    }
+		// Check if the file exists
+		if ( !file_exists( $csv_file_path ) ) {
+			return $subscriptions;
+		}
 	
-	    // Read the CSV file into an associative array for efficient searching
-	    $file_data = array();
-	    if (($handle = fopen($csv_file_path, "r")) !== false) {
-	        // Read the header
-	        $header = fgetcsv($handle);
+		// Read the CSV file into an associative array for efficient searching
+		$file_data = array();
+		if (($handle = fopen($csv_file_path, "r")) !== false) {
+			// Read the header
+			$header = fgetcsv($handle);
 	
-	        // Ensure the headers match our expected format
-	        $expected_headers = array('customer_id_old', 'source_id_old', 'customer_id_new', 'source_id_new');
-	        if ($header !== $expected_headers) {
-	            fclose($handle);
-	            return $subscriptions;
-	        }
+			// Ensure the headers match our expected format
+			$expected_headers = array('customer_id_old', 'source_id_old', 'customer_id_new', 'source_id_new');
+			if ($header !== $expected_headers) {
+				fclose($handle);
+				return $subscriptions;
+			}
 	
-	        // Read the CSV data into an associative array
-	        while (($row = fgetcsv($handle)) !== false) {
-	            $file_data[$row[0] . '_' . $row[1]] = array(
-	                'customer_id_new' => $row[2],
-	                'source_id_new'   => $row[3],
-	            );
-	        }
-	        fclose($handle);
-	    }
+			// Read the CSV data into an associative array
+			while (($row = fgetcsv($handle)) !== false) {
+				$file_data[$row[0] . '_' . $row[1]] = array(
+					'customer_id_new' => $row[2],
+					'source_id_new'   => $row[3],
+				);
+			}
+			fclose($handle);
+		}
 	
-	    if ( $source_key && $customer_id_key ) {
-	        foreach ( $subscriptions_raw as $subscription_raw ) {
-	            $subscription_id 	= !empty( $subscription_raw['id'] ) ? intval( $subscription_raw['id'] ) : 0;
-	            $subscription_name 	= !empty( $subscription_raw['name'] ) ? sanitize_text_field( $subscription_raw['name'] ) : '';
-	            if ( $subscription_id ) {
-	                $valid 		     = false;
-	                $subscription    = wcs_get_subscription( $subscription_id );
-	                $customer_id_new = "";
-	                $source_id_new   = "";
+		if ( $source_key && $customer_id_key ) {
+			foreach ( $subscriptions_raw as $subscription_raw ) {
+				$subscription_id 	= !empty( $subscription_raw['id'] ) ? intval( $subscription_raw['id'] ) : 0;
+				$subscription_name 	= !empty( $subscription_raw['name'] ) ? sanitize_text_field( $subscription_raw['name'] ) : '';
+				if ( $subscription_id ) {
+					$valid 		     = false;
+					$error_message   = "Subscription is valid.";
+					$subscription    = wcs_get_subscription( $subscription_id );
+					$customer_id_new = "";
+					$source_id_new   = "";
 	
-	                if ( $subscription ) {
-	                    $source 	 = $subscription->get_meta( $source_key );
-	                    $customer_id = $subscription->get_meta( $customer_id_key );
+					if ( $subscription ) {
+						$source 	 = $subscription->get_meta( $source_key );
+						$customer_id = $subscription->get_meta( $customer_id_key );
 	
-	                    // Check if this combination exists in the CSV data
-	                    if ( $source && $customer_id ) {
-	                        $search_key = $customer_id . '_' . $source;
-	                        if ( isset( $file_data[$search_key] ) ) {
-	                            $valid = true;
-	                            $customer_id_new = $file_data[$search_key]['customer_id_new'];
-	                            $source_id_new   = $file_data[$search_key]['source_id_new'];
-	                        }
-	                    }
-	                }
+						// Check if this combination exists in the CSV data
+						if ( $source && $customer_id ) {
+							$search_key = $customer_id . '_' . $source;
+							if ( isset( $file_data[$search_key] ) ) {
+								$customer_id_new = $file_data[$search_key]['customer_id_new'];
+								$source_id_new   = $file_data[$search_key]['source_id_new'];
 	
-	                $subscriptions[ $subscription_id ] = array(
-	                    'id'             => $subscription_id,
-	                    'name'           => $subscription_name,
-	                    'source_id'      => $source,
-	                    'source_id_new'  => $source_id_new,
-	                    'customer_id'    => $customer_id,
-	                    'customer_id_new'=> $customer_id_new,
-	                    'result'         => $valid,
-	                );
-	            }
-	        }			
-	    }
-	    	    
-	    return $subscriptions;
+								// Check if there's an existing subscription with destination_pm and matching _stripe_customer_id
+								$existing_subscriptions = wcs_get_subscriptions( array(
+									'payment_method' => $destination_pm,
+									'subscription_status' => array_keys( wcs_get_subscription_statuses() ),
+									'meta_query' => array(
+										array(
+											'key'   => '_stripe_customer_id',
+											'value' => $customer_id_new,
+										),
+									),
+								));
+	
+								if ( !empty( $existing_subscriptions ) ) {
+									$error_message = "A subscription with the destination payment method already exists for customer ID: {$customer_id_new}.";
+									$valid = false;
+								} else {
+									$valid = true;
+								}
+							}
+						}
+					}
+	
+					$subscriptions[ $subscription_id ] = array(
+						'id'             => $subscription_id,
+						'name'           => $subscription_name,
+						'source_id'      => $source,
+						'source_id_new'  => $source_id_new,
+						'customer_id'    => $customer_id,
+						'customer_id_new'=> $customer_id_new,
+						'result'         => $valid,
+						'message'        => $valid ? "Valid" : $error_message,
+					);
+				}
+			}			
+		}
+				
+		return $subscriptions;
 	}
+
 	
 	private function get_file_contents( $uploaded_file ) {
 		
