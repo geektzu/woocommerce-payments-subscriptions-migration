@@ -54,7 +54,7 @@ const Migration = () => {
 	const goToPreviousStep = () => {
 		setStep(step - 1);
 	};
-	
+
 	return (
 		<div className="wpsm-migration-wrapper">
 			{step === 1 && (
@@ -94,12 +94,12 @@ const Migration = () => {
 				/>
 			)}
 			{step === 4 && (
-		        <SubscriptionTokensPage
-		          goToNextStep={goToNextStep}
-		          goToPreviousStep={goToPreviousStep}
-		          setIsLoading={setIsLoading}
-		        />
-		      )}
+				<SubscriptionTokensPage
+					goToNextStep={goToNextStep}
+					goToPreviousStep={goToPreviousStep}
+					setIsLoading={setIsLoading}
+				/>
+			)}
 			{step === 5 && (
 				<MigrationPage
 					selectedSubscriptions={selectedSubscriptions} // This now contains objects with id and name
