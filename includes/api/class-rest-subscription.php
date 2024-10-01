@@ -78,6 +78,69 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		}
 	}
 	
+	private function get_customer_id_option() {
+
+		return WC_Payments::get_gateway()->is_in_test_mode()
+			? WC_Payments_Customer_Service::WCPAY_TEST_CUSTOMER_ID_OPTION
+			: WC_Payments_Customer_Service::WCPAY_LIVE_CUSTOMER_ID_OPTION;
+	}
+	
+	private function process_migration( $subscription_data, $origin_pm, $destination_pm ) {
+		$result = false;
+		$subscription_id = !empty( $subscription_data['id'] ) ? intval( $subscription_data['id'] ) : 0;
+		$old_token		 = !empty( $subscription_data['source_id'] ) ? sanitize_text_field( $subscription_data['source_id'] ) : "";
+		$new_token		 = !empty( $subscription_data['source_id_new'] ) ? sanitize_text_field( $subscription_data['source_id_new'] ) : "";
+		$old_customer	 = !empty( $subscription_data['customer_id'] ) ? sanitize_text_field( $subscription_data['customer_id'] ) : "";
+		$new_customer	 = !empty( $subscription_data['customer_id_new'] ) ? sanitize_text_field( $subscription_data['customer_id_new'] ) : "";
+		$subscription	 = $subscription_id ? wcs_get_subscription( $subscription_id ) : array();
+		if ( !$subscription || !$old_token || !$new_token || !$old_customer || !$new_customer ) {
+			return false;
+		}
+		
+		try {
+
+			$tokens = WC_Payment_Tokens::get_customer_tokens( $subscription->get_customer_id(), $origin_pm );
+			if ( $tokens ) {
+				$token = array();
+				foreach ( $tokens as $tokn ) {
+					if ( $tokn->get_token() == $old_token ) {
+						$token = $tokn;
+					}
+				}
+				if ( $token ) {
+
+					if ( $old_customer != $new_customer ) {
+						//$old_stripe_customer = $subscription->get_meta( '_stripe_customer_id' );
+						//$subscription->update_meta_data( '_old_stripe_customer_id', $old_stripe_customer );
+						$subscription->update_meta_data( '_stripe_customer_id', $new_customer );
+					}
+
+					$new_token_obj = new WC_Payment_Token_CC();
+					$new_token_obj->set_gateway_id( WCPay\Payment_Methods\CC_Payment_Gateway::GATEWAY_ID );
+					$new_token_obj->set_expiry_month( $token->get_expiry_month() );
+					$new_token_obj->set_expiry_year( $token->get_expiry_year() );
+					$new_token_obj->set_card_type( $token->get_card_type() );
+					$new_token_obj->set_last4( $token->get_last4() );
+					$new_token_obj->set_token( $new_token );
+					$new_token_obj->set_user_id( $subscription->get_customer_id() );
+					$new_token_obj->save();
+					
+					$subscription->add_payment_token( $new_token_obj );
+					$subscription->set_payment_method( $destination_pm );
+					$subscription->save();
+
+					$global = WC_Payments::is_network_saved_cards_enabled();
+					update_user_option( $subscription->get_customer_id(), $this->get_customer_id_option(), $new_customer, $global );
+					$result = true;
+				}
+			}
+		} catch ( Exception $e ) {
+			$result = false;
+		}
+
+		return $result;
+	}
+	
 	public function migrate( $request ) {
 		$params = $request->get_params();
 		$sel_subscriptions  = ( !empty( $params['subscriptions'] ) && is_array( $params['subscriptions'] ) ) ? $params['subscriptions'] : array();
@@ -85,13 +148,21 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		$destination_pm  	= !empty( $params['destination_pm'] ) ? $params['destination_pm'] : '';
 		$finished 		 	= !empty( $params['finished'] ) ? $params['finished'] : false;
 		
-		$subscriptions = array();
-		foreach ( $sel_subscriptions as $subscription ) {
-			$result = true;
+		$subscriptions_prc  = $this->get_subscription_data( $sel_subscriptions, $origin_pm, $destination_pm );
+		$subscriptions 		= array();
+		foreach ( $subscriptions_prc as $subscription ) {
+			$result 	= $subscription['result'];
+			$message 	= $subscription['message'];
+			
+			if ( $result ) {
+				$result  = $this->process_migration( $subscription, $origin_pm, $destination_pm );
+				$message = $result ? 'Valid' : 'Migration Failed';
+			}
+			
 			$subscriptions[] = array(
 				'id'		   => $subscription['id'],
 				'name' 		   => $subscription['name'],
-				'message' 	   => $result ? "Success!" : "Failed!",
+				'message' 	   => $message,
 				'success'	   => $result,
 			);
 		}
@@ -216,7 +287,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 				$subscription_name 	= !empty( $subscription_raw['name'] ) ? sanitize_text_field( $subscription_raw['name'] ) : '';
 				if ( $subscription_id ) {
 					$valid 		     = false;
-					$error_message   = "Subscription is valid.";
+					$error_message   = "Subscription is invalid.";
 					$subscription    = wcs_get_subscription( $subscription_id );
 					$customer_id_new = "";
 					$source_id_new   = "";
@@ -433,15 +504,14 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 				    'id' 	=> $subscription_id,
 					'name' 	=> "Subscription #" . $subscription_id,
 			    );
-		    }
+		    }		    
 		}
 				
 		$data = array(
 			'result' => true,
 			'data'	 => $subscriptions,
 		);
-
-
+		
 		return rest_ensure_response( $data );
 	}
 	
