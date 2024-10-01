@@ -79,8 +79,7 @@ const SubscriptionTokensPage = ({
 				You can download a sample CSV file{' '}
 				<a
 					href={
-						window.wcpsm_migration_data.endpoints
-							?.download_sample_csv
+						window.wcpsm_migration_data?.download_sample_csv
 					}
 					download
 				>

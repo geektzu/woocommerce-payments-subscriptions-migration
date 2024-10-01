@@ -148,6 +148,7 @@ if ( ! class_exists( 'wcpay_subscriptions_migration' ) ) {
 					'nonce'     => wp_create_nonce( 'wp_rest' ),
 					'endpoints' => $endpoints,
 					'per_page'  => 10,
+					'download_sample_csv' => WCPSM_DIR_URL . '/sample.csv',
 				)
 			);
 
