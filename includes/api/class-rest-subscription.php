@@ -127,10 +127,18 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		return rest_ensure_response( $data );
 	}
 	
+	private function is_hpos() {
+		if ( class_exists( 'Automattic\WooCommerce\Utilities\OrderUtil' ) && Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled() && get_option( 'woocommerce_custom_orders_table_data_sync_enabled' ) != 'yes' ) {
+		    return true;
+		}
+		
+		return false;
+	}
+	
 	private function get_subscriptions_by_payment_method( $method ) {
 		
 		$subscriptions   = array();
-		$is_hpos_enabled = 'WC_Order_Data_Store_CPT' !== get_option('woocommerce_subscriptions_order_data_store');
+		$is_hpos_enabled = $this->is_hpos();;
 		
 		if ( $is_hpos_enabled ) {
 			global $wpdb;
