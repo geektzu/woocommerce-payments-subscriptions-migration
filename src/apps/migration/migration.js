@@ -10,6 +10,7 @@ import apiFetch from '@wordpress/api-fetch';
 import OriginPaymentPage from './components/OriginPaymentPage';
 import SubscriptionsPage from './components/SubscriptionsPage';
 import DestinationPaymentPage from './components/DestinationPaymentPage';
+import SubscriptionTokensPage from './components/SubscriptionTokensPage';
 import MigrationPage from './components/MigrationPage';
 import ResultsPage from './components/ResultsPage';
 import './migration.scss';
@@ -53,7 +54,7 @@ const Migration = () => {
 	const goToPreviousStep = () => {
 		setStep(step - 1);
 	};
-
+	
 	return (
 		<div className="wpsm-migration-wrapper">
 			{step === 1 && (
@@ -93,6 +94,13 @@ const Migration = () => {
 				/>
 			)}
 			{step === 4 && (
+		        <SubscriptionTokensPage
+		          goToNextStep={goToNextStep}
+		          goToPreviousStep={goToPreviousStep}
+		          setIsLoading={setIsLoading}
+		        />
+		      )}
+			{step === 5 && (
 				<MigrationPage
 					selectedSubscriptions={selectedSubscriptions} // This now contains objects with id and name
 					selectedOriginPayment={selectedOriginPayment}
@@ -106,7 +114,7 @@ const Migration = () => {
 					setIsLoading={setIsLoading}
 				/>
 			)}
-			{step === 5 && <ResultsPage migrationResults={migrationResults} />}
+			{step === 6 && <ResultsPage migrationResults={migrationResults} />}
 		</div>
 	);
 };

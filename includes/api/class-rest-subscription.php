@@ -48,6 +48,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			array(
 				'dry_migrate' => 'subscriptions/dry-migrate',
 				'migrate'     => 'subscriptions/migrate',
+				'validate_subscription_tokens' => 'subscription/tokens',
 			),
 		);
 	}
@@ -124,6 +125,79 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			'data'	 => $subscriptions,
 		);
 
+		return rest_ensure_response( $data );
+	}
+	
+	public function get_file_contents( $uploaded_file ) {
+		
+		// Read the file content
+	    $file_content = file_get_contents( $uploaded_file['tmp_name'] );
+	    $lines = explode( "\n", $file_content );
+	
+	    // Extract the header row
+	    $header = str_getcsv( array_shift( $lines ) );
+	
+	    // Initialize an array to store the parsed data
+	    $parsed_data = array();
+	
+	    // Process up to 5 rows for the preview
+	    $max_rows = 5;
+	    $row_count = 0;
+	
+	    foreach ( $lines as $line ) {
+	        if ( $row_count >= $max_rows ) {
+	            break;
+	        }
+	
+	        $row = str_getcsv( $line );
+	
+	        // Skip empty lines
+	        if ( empty( $row ) || count( $row ) !== count( $header ) ) {
+	            continue;
+	        }
+	
+	        // Combine header with row values
+	        $parsed_data[] = array_combine( $header, $row );
+	        $row_count++;
+	    }
+	    
+	    return $parsed_data;
+	}
+	
+	public function validate_subscription_tokens( $request ) {
+		
+		$files = $request->get_file_params();
+
+	    // Check if the file exists in the request
+	    if ( empty( $files['file'] ) || $files['file']['error'] !== UPLOAD_ERR_OK ) {
+	        return rest_ensure_response( array(
+	            'result'  => false,
+	            'message' => 'No file uploaded or there was an upload error.',
+	            'data'    => array(),
+	        ) );
+	    }
+	    
+	    $uploaded_file = $files['file'];
+
+	    // Check file type (ensure it's a CSV)
+	    $file_type = mime_content_type( $uploaded_file['tmp_name'] );
+	    if ( $file_type !== 'text/csv' ) {
+	        return rest_ensure_response( array(
+	            'result'  => false,
+	            'message' => 'Invalid file type. Please upload a CSV file.',
+	            'data'    => array(),
+	        ) );
+	    }
+		
+		$data   = $this->get_file_contents( $uploaded_file );
+		$result = $data ? true : false;
+		
+		$data = array(
+			'result'  => $result,
+			'message' => $result ? "File is Valid!" : "Error validating the file. Please try again.",
+			'data'	  => $data,
+		);
+		
 		return rest_ensure_response( $data );
 	}
 	
