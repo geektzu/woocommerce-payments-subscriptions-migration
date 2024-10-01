@@ -83,6 +83,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		$sel_subscriptions  = ( !empty( $params['subscriptions'] ) && is_array( $params['subscriptions'] ) ) ? $params['subscriptions'] : array();
 		$origin_pm  	 	= !empty( $params['origin_pm'] ) ? $params['origin_pm'] : '';
 		$destination_pm  	= !empty( $params['destination_pm'] ) ? $params['destination_pm'] : '';
+		$finished 		 	= !empty( $params['finished'] ) ? $params['finished'] : false;
 		
 		$subscriptions = array();
 		foreach ( $sel_subscriptions as $subscription ) {
@@ -93,7 +94,14 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 				'message' 	   => $result ? "Success!" : "Failed!",
 				'success'	   => $result,
 			);
-		} 
+		}
+		
+		if ( $finished ) {
+			$user_id = get_current_user_id();
+			if ( $user_id ) {
+				$this->delete_subscription_migration_file( $user_id );
+			}
+		}
 
 		$data = array(
 			'result' => true,
