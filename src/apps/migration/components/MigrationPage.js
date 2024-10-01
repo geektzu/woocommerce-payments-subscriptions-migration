@@ -6,7 +6,7 @@ import { List } from 'react-content-loader';
 /**
  * WordPress Dependencies
  */
-import { useState } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import { Spinner, Button, ProgressBar } from '@wordpress/components';
 
@@ -25,9 +25,20 @@ const MigrationPage = ({
 	const [currentPage, setCurrentPage] = useState(1);
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [progress, setProgress] = useState(0);
-	const [dryRunPage, setDryRunPage] = useState(1); // We'll reuse this state for the live run as well
+	const [dryRunPage, setDryRunPage] = useState(1);
 	const [testResultsOnGreen, setTestResultsOnGreen] = useState([]);
-	const perPage = window.wcpsm_migration_data.per_page * 1; // Ensure it's treated as a number
+	const [dryRunCompleted, setDryRunCompleted] = useState(false); // Track if dry run is completed
+	const perPage = window.wcpsm_migration_data.per_page * 1;
+
+	// Reset state when user navigates back
+	useEffect(() => {
+		return () => {
+			setTestResults([]);
+			setTestResultsOnGreen([]);
+			setProgress(0);
+			setDryRunCompleted(false);
+		};
+	}, []);
 
 	const handleTest = async () => {
 		setIsProcessing(true);
@@ -38,7 +49,7 @@ const MigrationPage = ({
 		let allResults = [];
 
 		for (let page = 1; page <= totalBatches; page++) {
-			setDryRunPage(page); // Set the current dry run page
+			setDryRunPage(page);
 			const startIndex = (page - 1) * perPage;
 			const subscriptionsBatch = selectedSubscriptions.slice(
 				startIndex,
@@ -60,8 +71,6 @@ const MigrationPage = ({
 				});
 
 				allResults = [...allResults, ...response.data];
-
-				// Update progress
 				setProgress(((page + 1) / totalBatches) * 100);
 			} catch (error) {
 				console.error('Error running test:', error);
@@ -70,6 +79,7 @@ const MigrationPage = ({
 
 		setTestResults(allResults);
 		setTestResultsOnGreen(allResults.filter((res) => res.success === true));
+		setDryRunCompleted(true); // Mark dry run as completed
 		setIsProcessing(false);
 		setIsLoading(false);
 	};
@@ -83,7 +93,7 @@ const MigrationPage = ({
 		let allResults = [];
 
 		for (let page = 1; page <= totalBatches; page++) {
-			setDryRunPage(page); // Reusing this for live run page indication
+			setDryRunPage(page);
 			const startIndex = (page - 1) * perPage;
 			const subscriptionsBatch = selectedSubscriptions.slice(
 				startIndex,
@@ -101,13 +111,11 @@ const MigrationPage = ({
 						subscriptions: subscriptionsBatch,
 						origin_pm: selectedOriginPayment,
 						destination_pm: selectedDestinationPayment,
-						finished: page === totalBatches, 
+						finished: page === totalBatches,
 					},
 				});
 
 				allResults = [...allResults, ...response.data];
-
-				// Update progress
 				setProgress(((page + 1) / totalBatches) * 100);
 			} catch (error) {
 				console.error('Error running live migration:', error);
@@ -127,7 +135,6 @@ const MigrationPage = ({
 		startIndex + perPage
 	);
 
-	// Handle pagination
 	const totalPages = Math.ceil(selectedSubscriptions.length / perPage);
 
 	const goToNextPage = () => {
@@ -147,7 +154,7 @@ const MigrationPage = ({
 			<h2>Test Migration</h2>
 			<p className="text-muted">
 				We&apos;re ready for the migration. We need to do a test run
-				first to check for all the condtions, and if they are met, we
+				first to check for all the conditions, and if they are met, we
 				can run the actual migration.
 			</p>
 			{selectedSubscriptions.length > 0 ? (
@@ -176,7 +183,7 @@ const MigrationPage = ({
 										key={index}
 										style={{
 											color: statusColor,
-											opacity: result ? 1 : 0.5, // Grayed out if not tested yet
+											opacity: result ? 1 : 0.5,
 										}}
 									>
 										{`${subscriptionName} - ${statusText}`}
@@ -191,8 +198,6 @@ const MigrationPage = ({
 								{testResultsOnGreen.length}
 							</p>
 						</div>
-
-						{/* Display Progress Bar if processing */}
 					</div>
 					<div className="psm-migration-page__pagination">
 						<Button
@@ -220,7 +225,6 @@ const MigrationPage = ({
 				<p>No subscriptions selected for migration.</p>
 			)}
 
-			{/* Buttons aligned together below the list */}
 			<div className="wpsm-migration-page__actions">
 				{isProcessing ? (
 					<>
@@ -233,7 +237,10 @@ const MigrationPage = ({
 					<>
 						<Button
 							variant="secondary"
-							onClick={goToPreviousStep}
+							onClick={() => {
+								goToPreviousStep();
+								setDryRunCompleted(false);
+							}}
 							disabled={isProcessing}
 						>
 							Previous
@@ -251,8 +258,7 @@ const MigrationPage = ({
 								variant="primary"
 								onClick={handleRun}
 								disabled={
-									testResults.filter((res) => res.success)
-										.length === 0 ||
+									!dryRunCompleted ||
 									isLoading ||
 									isProcessing
 								}
