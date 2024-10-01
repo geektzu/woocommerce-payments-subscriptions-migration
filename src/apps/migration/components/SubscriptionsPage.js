@@ -22,15 +22,15 @@ const SubscriptionsPage = ({
 	setIsLoading,
 }) => {
 	const [currentPage, setCurrentPage] = useState(1);
-	const perPage = wcpsm_migration_data.per_page * 1;
+	const perPage = window.wcpsm_migration_data.per_page * 1;
 
 	useEffect(() => {
 		if (selectedOriginPayment) {
 			setIsLoading(true);
 			apiFetch({
-				path: `${wcpsm_migration_data.endpoints?.get_subscriptions}?origin_pm=${selectedOriginPayment}`,
+				path: `${window.wcpsm_migration_data.endpoints?.get_subscriptions}?origin_pm=${selectedOriginPayment}`,
 				headers: {
-					'X-WP-Nonce': wcpsm_migration_data.nonce,
+					'X-WP-Nonce': window.wcpsm_migration_data.nonce,
 				},
 			})
 				.then((response) => setSubscriptions(response.data))

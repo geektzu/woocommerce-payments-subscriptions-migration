@@ -54,7 +54,8 @@ const SubscriptionTokensPage = ({
 						setIsFileValid(false);
 					}
 				})
-				.catch(() => {
+				.catch((error) => {
+					console.error('Error validating the file:', error);
 					setErrorMessage(
 						'Error validating the file. Please try again.'
 					);
@@ -78,9 +79,7 @@ const SubscriptionTokensPage = ({
 			<p className="text-muted">
 				You can download a sample CSV file{' '}
 				<a
-					href={
-						window.wcpsm_migration_data?.download_sample_csv
-					}
+					href={window.wcpsm_migration_data?.download_sample_csv}
 					download
 				>
 					here

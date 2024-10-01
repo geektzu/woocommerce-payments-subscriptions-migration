@@ -134,7 +134,7 @@ class WCPSM_Settings {
 	 * @return void
 	 */
 	public function sd_menu() {
-		add_options_page( __( 'Migration Settings', 'sd-scaffold-plugin' ), __( 'Migration Settings', 'sd-scaffold-plugin' ), 'administrator', 'sd-settings-page', array( $this, 'settings_page' ), 10 );
+		add_options_page( __( 'Migration Settings', 'sd-scaffold-plugin' ), __( 'Migration Settings', 'sd-scaffold-plugin' ), 'manage_options', 'sd-settings-page', array( $this, 'settings_page' ), 10 );
 	}
 
 	/**
@@ -159,7 +159,7 @@ class WCPSM_Settings {
 
 		if ( isset( $_SERVER['REQUEST_METHOD'] ) && 'POST' === $_SERVER['REQUEST_METHOD'] ) {
 
-			if ( isset( $_POST['sd_site_mode'] ) ) {
+			if ( isset( $_POST['sd_site_mode'] ) && check_admin_referer( 'sd_settings_nonce', 'sd_settings_nonce_field' ) ) {
 				$this->update_field( 'sd_site_mode' );
 			}
 
@@ -187,6 +187,8 @@ class WCPSM_Settings {
 		?><div class="wrap">
 
 			<?php if ( '' !== $result ) { ?>
+				<form method="post" action="">
+					<?php wp_nonce_field( 'sd_settings_nonce', 'sd_settings_nonce_field' ); ?>
 				<div class="updated">
 					<p><?php echo esc_html( $result ); ?></p>
 				</div>

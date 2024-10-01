@@ -2,7 +2,6 @@
  * WordPress dependencies
  */
 import { useState } from '@wordpress/element';
-import { Button } from '@wordpress/components';
 
 const ResultsPage = ({ migrationResults }) => {
 	const [currentPage, setCurrentPage] = useState(1);

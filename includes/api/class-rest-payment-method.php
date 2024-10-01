@@ -1,10 +1,10 @@
-<?php
-
+<?php // phpcs:ignore WordPress.Files.FileName
 /**
  * Class WCPSM_Rest_Subscription
  *
  * The purpose of this class is to register the REST API routes for subscriptions.
  *
+ * @package WCPSM_Migrate
  */
 class WCPSM_Rest_Payment_Method extends \WP_REST_Controller {
 
@@ -42,7 +42,7 @@ class WCPSM_Rest_Payment_Method extends \WP_REST_Controller {
 		$this->endpoints = array(
 			\WP_REST_Server::READABLE =>
 			array(
-				'get_origin_methods' => 'payments/origin',
+				'get_origin_methods'      => 'payments/origin',
 				'get_destination_methods' => 'payments/destination',
 			),
 		);
@@ -72,50 +72,62 @@ class WCPSM_Rest_Payment_Method extends \WP_REST_Controller {
 			}
 		}
 	}
-	
+
+	/**
+	 * Get the origin payment methods.
+	 *
+	 * @param [Object] $request The request object.
+	 * @return [Object] The response object.
+	 */
 	public function get_origin_methods( $request ) {
 		$params  = $request->get_params();
 		$methods = array();
-		
+
 		if ( function_exists( 'WC' ) ) {
 			$payment_gateways = WC()->payment_gateways->payment_gateways;
 			foreach ( $payment_gateways as $gateway ) {
 				if ( in_array( $gateway->id, array( 'authorize_net_cim_credit_card', 'stripe', 'elavon_converge_credit_card' ) ) ) {
-			        $methods[] = array(
-			            'id'   => $gateway->id,
-			            'name' => $gateway->get_method_title(),
-			        );
-		        }
-		    }
+					$methods[] = array(
+						'id'   => $gateway->id,
+						'name' => $gateway->get_method_title(),
+					);
+				}
+			}
 		}
-		
+
 		$data = array(
 			'result' => true,
-			'data'	 => $methods,
+			'data'   => $methods,
 		);
 
 		return rest_ensure_response( $data );
 	}
-	
+
+	/**
+	 * Get the destination payment methods.
+	 *
+	 * @param [Object] $request The request object.
+	 * @return [Object] The response object.
+	 */
 	public function get_destination_methods( $request ) {
-		$params = $request->get_params();
+		$params  = $request->get_params();
 		$methods = array();
-		
+
 		if ( function_exists( 'WC' ) ) {
 			$payment_gateways = WC()->payment_gateways->payment_gateways;
 			foreach ( $payment_gateways as $gateway ) {
-				if ( in_array( $gateway->id, array( 'woocommerce_payments' ) ) ) {
-			        $methods[] = array(
-			            'id'   => $gateway->id,
-			            'name' => $gateway->get_method_title(),
-			        );
-		        }
-		    }
+				if ( in_array( $gateway->id, array( 'woocommerce_payments' ), true ) ) {
+					$methods[] = array(
+						'id'   => $gateway->id,
+						'name' => $gateway->get_method_title(),
+					);
+				}
+			}
 		}
 
 		$data = array(
 			'result' => true,
-			'data'	 => $methods,
+			'data'   => $methods,
 		);
 
 		return rest_ensure_response( $data );

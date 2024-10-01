@@ -1,8 +1,8 @@
-<?php
-	
+<?php // phpcs:ignore WordPress.Files.FileName
 /**
  * This class is responsible for instanciaing the rest api routes for the Subscription Migration.
  *
+ * @package WCPSM_Migrate
  */
 class WCPSM_Rest {
 
@@ -12,7 +12,7 @@ class WCPSM_Rest {
 	 * @var array
 	 */
 	public $apis = array();
-	
+
 	/**
 	 * The single instance of the class.
 	 *
@@ -29,9 +29,9 @@ class WCPSM_Rest {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 
 		// Set endpoints on variable.
-		add_action( 'init', array( $this, 'set_api_endpoints' ), 9 );		
+		add_action( 'init', array( $this, 'set_api_endpoints' ), 9 );
 	}
-	
+
 	/**
 	 * Get the single instance of the class.
 	 *
@@ -54,7 +54,12 @@ class WCPSM_Rest {
 		$this->apis[] = WCPSM_Rest_Subscription::get_instance();
 		$this->apis[] = WCPSM_Rest_Payment_Method::get_instance();
 	}
-	
+
+	/**
+	 * Get the api endpoints and returns them as an array.
+	 *
+	 * @return array
+	 */
 	public function get_api_endpoints() {
 		$endpoints = array();
 		foreach ( $this->apis as $api ) {
@@ -70,10 +75,9 @@ class WCPSM_Rest {
 				}
 			}
 		}
-		
+
 		return $endpoints;
 	}
-
 
 	/**
 	 * Register the rest api routes.

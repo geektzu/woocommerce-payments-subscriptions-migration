@@ -1,3 +1,7 @@
+// This file is the main component for the migration process.
+// It contains all the steps and the logic to move between them.
+// It also fetches the origin payment methods when the component mounts.
+
 /**
  * WordPress Dependencies
  */
@@ -20,7 +24,7 @@ const Migration = () => {
 	const [originPayments, setOriginPayments] = useState([]);
 	const [selectedOriginPayment, setSelectedOriginPayment] = useState(null);
 	const [subscriptions, setSubscriptions] = useState([]);
-	const [selectedSubscriptions, setSelectedSubscriptions] = useState([]); // Now an array of objects with id and name
+	const [selectedSubscriptions, setSelectedSubscriptions] = useState([]);
 	const [destinationPayments, setDestinationPayments] = useState([]);
 	const [selectedDestinationPayment, setSelectedDestinationPayment] =
 		useState(null);
@@ -102,7 +106,7 @@ const Migration = () => {
 			)}
 			{step === 5 && (
 				<MigrationPage
-					selectedSubscriptions={selectedSubscriptions} // This now contains objects with id and name
+					selectedSubscriptions={selectedSubscriptions}
 					selectedOriginPayment={selectedOriginPayment}
 					selectedDestinationPayment={selectedDestinationPayment}
 					testResults={testResults}

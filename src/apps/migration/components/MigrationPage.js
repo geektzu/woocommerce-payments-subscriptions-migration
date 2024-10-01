@@ -1,9 +1,4 @@
 /**
- * External Dependencies
- */
-import { List } from 'react-content-loader';
-
-/**
  * WordPress Dependencies
  */
 import { useState, useEffect } from '@wordpress/element';

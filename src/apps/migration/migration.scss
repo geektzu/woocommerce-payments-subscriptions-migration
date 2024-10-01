@@ -86,7 +86,7 @@ svg.components-checkbox-control__checked {
 				flex-shrink: 0;
 			}
 			.wpsm-migration-page__checkbox_list_middle {
-				flex-grow: 1; /* Allow the middle div to take available space */
+				flex-grow: 1;
 				overflow-y: auto;
 			}
 		}

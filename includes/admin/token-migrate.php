@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @package     WooCommerce\Abstracts
  */
 class WC_Payment_Token_Migrate extends WC_Payment_Token {
-	
+
 	protected $type = 'migrate';
 
 	public function __construct( $token = '' ) {
