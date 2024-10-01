@@ -170,20 +170,20 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	}
 	
 	public function validate_subscription_tokens( $request ) {
-		
-		$files = $request->get_file_params();
-
+	    $files    = $request->get_file_params();
+	    $user_id = get_current_user_id();
+	
 	    // Check if the file exists in the request
-	    if ( empty( $files['file'] ) || $files['file']['error'] !== UPLOAD_ERR_OK ) {
+	    if ( empty( $files['file'] ) || $files['file']['error'] !== UPLOAD_ERR_OK || !$user_id ) {
 	        return rest_ensure_response( array(
 	            'result'  => false,
 	            'message' => 'No file uploaded or there was an upload error.',
 	            'data'    => array(),
 	        ) );
 	    }
-	    
+	
 	    $uploaded_file = $files['file'];
-
+	
 	    // Check file type (ensure it's a CSV)
 	    $file_type = mime_content_type( $uploaded_file['tmp_name'] );
 	    if ( $file_type !== 'text/csv' ) {
@@ -193,18 +193,43 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	            'data'    => array(),
 	        ) );
 	    }
-		
-		$data   = $this->get_file_contents( $uploaded_file );
-		$result = $data ? true : false;
-		
-		$data = array(
-			'result'  => $result,
-			'message' => $result ? "File is Valid!" : "Invalid file content.",
-			'data'	  => $data,
-		);
-		
-		return rest_ensure_response( $data );
-	}
+	
+	    // Validate and get file contents
+	    $data = $this->get_file_contents( $uploaded_file );
+	    $result = !empty($data);
+	
+	    // If valid, save the file
+	    if ( $result ) {
+	        $user_id = get_current_user_id();
+	        $upload_path = WCPSM_DIR_PATH . '/assets/csv/';
+	        
+	        // Ensure the directory exists
+	        if ( !file_exists( $upload_path ) ) {
+	            wp_mkdir_p( $upload_path );
+	        }
+	
+	        $file_name = "subscription_migration_$user_id.csv";
+	        $file_path = $upload_path . $file_name;
+	
+	        // Move the uploaded file to the destination
+	        if ( !move_uploaded_file( $uploaded_file['tmp_name'], $file_path ) ) {
+	            return rest_ensure_response( array(
+	                'result'  => false,
+	                'message' => 'Error saving the file. Please try again.',
+	                'data'    => array(),
+	            ) );
+	        }
+	    }
+	
+	    // Prepare the response
+	    $response_data = array(
+	        'result'  => $result,
+	        'message' => $result ? "File is Valid and has been saved!" : "Invalid file content.",
+	        'data'    => $data,
+	    );
+	
+	    return rest_ensure_response( $response_data );
+	}	
 	
 	private function is_hpos() {
 		if ( class_exists( 'Automattic\WooCommerce\Utilities\OrderUtil' ) && Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled() && get_option( 'woocommerce_custom_orders_table_data_sync_enabled' ) != 'yes' ) {
@@ -275,6 +300,19 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		return rest_ensure_response( $data );
 	}
 	
+	public function delete_subscription_migration_file( $user_id ) {
+	    $file_path = WCPSM_DIR_PATH . "/assets/csv/subscription_migration_${user_id}.csv";
+	    if ( file_exists( $file_path ) ) {
+	        if ( unlink( $file_path ) ) {
+	            return true;
+	        } else {
+	            return false; 
+	        }
+	    }
+	
+	    return false;
+	}
+		
 	/**
 	 * Check if a given request has access to get items.
 	 *
