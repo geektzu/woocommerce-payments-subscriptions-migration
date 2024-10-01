@@ -260,7 +260,8 @@ const MigrationPage = ({
 								disabled={
 									!dryRunCompleted ||
 									isLoading ||
-									isProcessing
+									isProcessing ||
+									testResultsOnGreen?.length == 0
 								}
 							>
 								{isLoading ? <Spinner /> : 'Run Migration'}
