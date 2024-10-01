@@ -128,14 +128,19 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		return rest_ensure_response( $data );
 	}
 	
-	public function get_file_contents( $uploaded_file ) {
+	private function get_file_contents( $uploaded_file ) {
 		
-		// Read the file content
+	    // Read the file content
 	    $file_content = file_get_contents( $uploaded_file['tmp_name'] );
 	    $lines = explode( "\n", $file_content );
 	
 	    // Extract the header row
 	    $header = str_getcsv( array_shift( $lines ) );
+	
+	    $required_headers = array( 'customer_id_old', 'source_id_old', 'customer_id_new', 'source_id_new' );
+	    if ($header !== $required_headers) {
+	        return array();
+	    }
 	
 	    // Initialize an array to store the parsed data
 	    $parsed_data = array();
@@ -151,7 +156,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	
 	        $row = str_getcsv( $line );
 	
-	        // Skip empty lines
+	        // Skip empty lines or rows that don't match the header column count
 	        if ( empty( $row ) || count( $row ) !== count( $header ) ) {
 	            continue;
 	        }
@@ -160,7 +165,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	        $parsed_data[] = array_combine( $header, $row );
 	        $row_count++;
 	    }
-	    
+		
 	    return $parsed_data;
 	}
 	
@@ -194,7 +199,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		
 		$data = array(
 			'result'  => $result,
-			'message' => $result ? "File is Valid!" : "Error validating the file. Please try again.",
+			'message' => $result ? "File is Valid!" : "Invalid file content.",
 			'data'	  => $data,
 		);
 		
