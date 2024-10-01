@@ -3,3 +3,4 @@ build/
 build-extensions/
 includes/
 woocommerce-payments-subscriptions-migration.php
+sample.csv

@@ -41,6 +41,12 @@ const SubscriptionsPage = ({
 		}
 	}, [selectedOriginPayment]);
 
+	// Reset selected subscriptions when going back
+	const handleGoBack = () => {
+		setSelectedSubscriptions([]); // Reset selected subscriptions
+		goToPreviousStep();
+	};
+
 	const handleSelectAll = () => {
 		if (selectedSubscriptions.length === subscriptions.length) {
 			setSelectedSubscriptions([]);
@@ -173,7 +179,7 @@ const SubscriptionsPage = ({
 						<p>No subscriptions with {selectedOriginPayment}</p>
 					)}
 					<div className="wpsm-migration-page__actions">
-						<Button variant="secondary" onClick={goToPreviousStep}>
+						<Button variant="secondary" onClick={handleGoBack}>
 							Previous
 						</Button>
 						<Button
