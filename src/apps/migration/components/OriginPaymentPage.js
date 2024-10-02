@@ -15,6 +15,7 @@ const OriginPaymentPage = ({
 	goToNextStep,
 	isLoading,
 }) => {
+	
 	return (
 		<div className="wpsm-migration-page">
 			<h2>Select Origin Payment Method</h2>
@@ -36,7 +37,17 @@ const OriginPaymentPage = ({
 								label="Available Origin Payment Methods"
 								selected={selectedOriginPayment}
 								options={originPayments.map((payment) => ({
-									label: payment.name,
+									label: (
+										<>
+											{payment.name}
+											{payment?.description && (
+												<span className="text-muted">
+													{" "}
+													{payment.description}
+												</span>
+											)}
+										</>
+									),
 									value: payment.id,
 								}))}
 								onChange={(value) =>

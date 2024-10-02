@@ -6,6 +6,11 @@ svg.components-checkbox-control__checked {
 	* {
 		box-sizing: border-box;
 	}
+	
+	p.text-muted, span.text-muted {
+		color: rgba( 0,0,0,0.5 );
+		font-size: 0.75rem;
+	}
 
 	margin-top: 2rem;
 	height: 400px;
