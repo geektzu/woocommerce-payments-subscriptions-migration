@@ -110,8 +110,6 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 				if ( $token ) {
 
 					if ( $old_customer != $new_customer ) {
-						//$old_stripe_customer = $subscription->get_meta( '_stripe_customer_id' );
-						//$subscription->update_meta_data( '_old_stripe_customer_id', $old_stripe_customer );
 						$subscription->update_meta_data( '_stripe_customer_id', $new_customer );
 					}
 
@@ -127,6 +125,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 					
 					$subscription->add_payment_token( $new_token_obj );
 					$subscription->set_payment_method( $destination_pm );
+					$subscription->update_meta_data( '_wcpsm_migrated', md5( "$new_customer:$new_token" ) );
 					$subscription->save();
 
 					$global = WC_Payments::is_network_saved_cards_enabled();
@@ -321,19 +320,25 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 									'subscription_status' => array_keys( wcs_get_subscription_statuses() ),
 									'meta_query' => array(
 										array(
-											'key'   => '_stripe_customer_id',
-											'value' => $customer_id_new,
+											'key'   => '_wcpsm_migrated',
+											'compare' => '=',
+											'value' => md5( "$customer_id_new:$source_id_new" )
 										),
 									),
 								));
-	
+									
 								if ( !empty( $existing_subscriptions ) ) {
-									$error_message = "A subscription with the destination payment method already exists for customer ID: {$customer_id_new}.";
+									$error_message = "A subscription with the destination payment method already exists with new customer and token data.";
 									$valid = false;
 								} else {
 									$valid = true;
 								}
 							}
+						}
+						
+						if ( strpos( $origin_pm, $subscription->get_payment_method() ) !== false && $origin_pm !== 'custom' ) {
+							$error_message = "Subscription is from a different payment method (" . $subscription->get_payment_method_title() . ").";
+							$valid = false;
 						}
 					}
 	
@@ -469,34 +474,55 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	private function get_subscriptions_by_payment_method( $method ) {
 		
 		$subscriptions   = array();
-		$is_hpos_enabled = $this->is_hpos();;
+		$is_hpos_enabled = $this->is_hpos();
 		
-		if ( $is_hpos_enabled ) {
-			global $wpdb;
-			$table_name = $wpdb->prefix . 'wc_orders';
-		    $query 		= $wpdb->prepare(
-		        "SELECT * FROM $table_name WHERE type = %s AND payment_method = %s",
-		        'shop_subscription',
-		        $method
-		    );
-		    
-		    $subscriptions = $wpdb->get_col( $query );
-		} else {		    
-		    $args = array(
+		if ( $method == 'custom' ) {
+			$args = array(
 		        'post_type'      => 'shop_subscription',
 		        'posts_per_page' => -1,
 		        'fields'		 => 'ids',
 		        'post_status'    => array_keys( wcs_get_subscription_statuses() ),
 		        'meta_query'     => array(
 		            array(
-		                'key'     => '_payment_method', // Meta key for payment method
-		                'value'   => $method,
-		                'compare' => '='
+		                'key'     => '_wc_dp_payment_token',
+		                'compare' => 'EXISTS'
+		            ),
+		            array(
+		                'key'     => '_wc_dp_customer_id',
+		                'compare' => 'EXISTS'
 		            ),
 		        ),
 		    );
-		
+		    
 		    $subscriptions = get_posts( $args );
+		} else {
+			if ( $is_hpos_enabled ) {
+				global $wpdb;
+				$table_name = $wpdb->prefix . 'wc_orders';
+			    $query 		= $wpdb->prepare(
+			        "SELECT * FROM $table_name WHERE type = %s AND payment_method = %s",
+			        'shop_subscription',
+			        $method
+			    );
+			    
+			    $subscriptions = $wpdb->get_col( $query );
+			} else {		    
+			    $args = array(
+			        'post_type'      => 'shop_subscription',
+			        'posts_per_page' => -1,
+			        'fields'		 => 'ids',
+			        'post_status'    => array_keys( wcs_get_subscription_statuses() ),
+			        'meta_query'     => array(
+			            array(
+			                'key'     => '_payment_method', // Meta key for payment method
+			                'value'   => $method,
+			                'compare' => '='
+			            ),
+			        ),
+			    );
+			
+			    $subscriptions = get_posts( $args );
+		    }
 	    }
 	    
 	    return $subscriptions;
