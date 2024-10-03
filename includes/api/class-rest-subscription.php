@@ -335,8 +335,8 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 								}
 							}
 						}
-						
-						if ( strpos( $origin_pm, $subscription->get_payment_method() ) !== false && $origin_pm !== 'custom' ) {
+																		
+						if ( ( strpos( $origin_pm, $subscription->get_payment_method() ) === false && strpos( $subscription->get_payment_method(), $origin_pm ) === false ) && $origin_pm !== 'custom' ) {
 							$error_message = "Subscription is from a different payment method (" . $subscription->get_payment_method_title() . ").";
 							$valid = false;
 						}
