@@ -195,6 +195,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 				'name' 		   => $subscription['name'],
 				'message' 	   => $subscription['message'],
 				'success'	   => $subscription['result'],
+				'warning'	   => $subscription['warning'],
 			);
 		}
 		
@@ -298,7 +299,8 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 				$subscription_name 	= !empty( $subscription_raw['name'] ) ? sanitize_text_field( $subscription_raw['name'] ) : '';
 				if ( $subscription_id ) {
 					$valid 		     = false;
-					$error_message   = "Subscription is invalid.";
+					$warning		 = false;
+					$error_message   = "Not applicable for migration. This subscription has no matching token with the CSV file provided. It will be skipped.";
 					$subscription    = wcs_get_subscription( $subscription_id );
 					$customer_id_new = "";
 					$source_id_new   = "";
@@ -329,7 +331,8 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 									
 								if ( !empty( $existing_subscriptions ) ) {
 									$error_message = "A subscription with the destination payment method already exists with new customer and token data.";
-									$valid = false;
+									$valid = true;
+									$warning = true;
 								} else {
 									$valid = true;
 								}
@@ -350,7 +353,8 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 						'customer_id'    => $customer_id,
 						'customer_id_new'=> $customer_id_new,
 						'result'         => $valid,
-						'message'        => $valid ? "Valid" : $error_message,
+						'warning'		 => $warning,
+						'message'        => ( $valid && !$warning ) ? "Valid" : $error_message,
 					);
 				}
 			}			
@@ -358,7 +362,6 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 				
 		return $subscriptions;
 	}
-
 	
 	private function get_file_contents( $uploaded_file ) {
 		
@@ -471,61 +474,74 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		return false;
 	}
 	
-	private function get_subscriptions_by_payment_method( $method ) {
+	private function get_equivalent_methods( $method ) {
+		$methods = array( $method );
+		if ( $method == 'stripe' ) {
+			$methods[] = 'stripe_cc';
+		}
 		
+		return $methods;
+	}
+	
+	private function get_subscriptions_by_payment_method( $method ) {
+			
+		$methods 		 = $this->get_equivalent_methods( $method ); // Assuming this returns an array of methods
 		$subscriptions   = array();
 		$is_hpos_enabled = $this->is_hpos();
 		
 		if ( $method == 'custom' ) {
 			$args = array(
-		        'post_type'      => 'shop_subscription',
-		        'posts_per_page' => -1,
-		        'fields'		 => 'ids',
-		        'post_status'    => array_keys( wcs_get_subscription_statuses() ),
-		        'meta_query'     => array(
-		            array(
-		                'key'     => '_wc_dp_payment_token',
-		                'compare' => 'EXISTS'
-		            ),
-		            array(
-		                'key'     => '_wc_dp_customer_id',
-		                'compare' => 'EXISTS'
-		            ),
-		        ),
-		    );
-		    
-		    $subscriptions = get_posts( $args );
+				'post_type'      => 'shop_subscription',
+				'posts_per_page' => -1,
+				'fields'		 => 'ids',
+				'post_status'    => array_keys( wcs_get_subscription_statuses() ),
+				'meta_query'     => array(
+					array(
+						'key'     => '_wc_dp_payment_token',
+						'compare' => 'EXISTS'
+					),
+					array(
+						'key'     => '_wc_dp_customer_id',
+						'compare' => 'EXISTS'
+					),
+				),
+			);
+			
+			$subscriptions = get_posts( $args );
 		} else {
 			if ( $is_hpos_enabled ) {
 				global $wpdb;
 				$table_name = $wpdb->prefix . 'wc_orders';
-			    $query 		= $wpdb->prepare(
-			        "SELECT * FROM $table_name WHERE type = %s AND payment_method = %s",
-			        'shop_subscription',
-			        $method
-			    );
-			    
-			    $subscriptions = $wpdb->get_col( $query );
+	
+				// Prepare placeholders for SQL IN clause
+				$placeholders = implode( ',', array_fill( 0, count( $methods ), '%s' ) );
+				
+				$query = $wpdb->prepare(
+					"SELECT * FROM $table_name WHERE type = %s AND payment_method IN ($placeholders)",
+					array_merge( array( 'shop_subscription' ), $methods ) // First is the type, then the methods
+				);
+				
+				$subscriptions = $wpdb->get_col( $query );
 			} else {		    
-			    $args = array(
-			        'post_type'      => 'shop_subscription',
-			        'posts_per_page' => -1,
-			        'fields'		 => 'ids',
-			        'post_status'    => array_keys( wcs_get_subscription_statuses() ),
-			        'meta_query'     => array(
-			            array(
-			                'key'     => '_payment_method', // Meta key for payment method
-			                'value'   => $method,
-			                'compare' => '='
-			            ),
-			        ),
-			    );
+				$args = array(
+					'post_type'      => 'shop_subscription',
+					'posts_per_page' => -1,
+					'fields'		 => 'ids',
+					'post_status'    => array_keys( wcs_get_subscription_statuses() ),
+					'meta_query'     => array(
+						array(
+							'key'     => '_payment_method', // Meta key for payment method
+							'value'   => $methods, // Use array of methods
+							'compare' => 'IN' // Use 'IN' for array comparison
+						),
+					),
+				);
 			
-			    $subscriptions = get_posts( $args );
-		    }
-	    }
-	    
-	    return $subscriptions;
+				$subscriptions = get_posts( $args );
+			}
+		}
+		
+		return $subscriptions;
 	}
 
 	public function get_subscriptions( $request ) {

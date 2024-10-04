@@ -38,11 +38,11 @@ const MigrationPage = ({
 	const handleTest = async () => {
 		setIsProcessing(true);
 		setIsLoading(true);
-
+	
 		const totalBatches = Math.ceil(selectedSubscriptions.length / perPage);
 		setProgress((1 / totalBatches) * 100);
 		let allResults = [];
-
+	
 		for (let page = 1; page <= totalBatches; page++) {
 			setDryRunPage(page);
 			const startIndex = (page - 1) * perPage;
@@ -50,7 +50,7 @@ const MigrationPage = ({
 				startIndex,
 				startIndex + perPage
 			);
-
+	
 			try {
 				const response = await apiFetch({
 					path: window.wcpsm_migration_data.endpoints?.dry_migrate,
@@ -64,14 +64,16 @@ const MigrationPage = ({
 						destination_pm: selectedDestinationPayment,
 					},
 				});
-
+	
+				// Append the result data to allResults
 				allResults = [...allResults, ...response.data];
 				setProgress(((page + 1) / totalBatches) * 100);
 			} catch (error) {
 				console.error('Error running test:', error);
 			}
 		}
-
+	
+		// Set results and filter those with success === true
 		setTestResults(allResults);
 		setTestResultsOnGreen(allResults.filter((res) => res.success === true));
 		setDryRunCompleted(true); // Mark dry run as completed
@@ -164,15 +166,19 @@ const MigrationPage = ({
 								const statusText = result
 									? result.message
 									: 'Pending test';
+									
 								const statusColor = result
 									? result.success
-										? 'green'
+										? result.warning
+											? 'yellow'
+											: 'green'
 										: 'red'
 									: 'gray';
+									
 								const subscriptionName = result
 									? result.name
 									: subscription.name;
-
+							
 								return (
 									<p
 										key={index}
