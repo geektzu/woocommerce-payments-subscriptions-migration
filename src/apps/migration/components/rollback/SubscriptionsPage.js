@@ -4,6 +4,7 @@ import { Spinner, CheckboxControl, Button } from '@wordpress/components';
 
 const SubscriptionsPage = ({
 	subscriptions,
+	setSubscriptions,
 	selectedSubscriptions,
 	setSelectedSubscriptions,
 	goToNextStep,
@@ -14,7 +15,7 @@ const SubscriptionsPage = ({
 }) => {
 	const [currentPage, setCurrentPage] = useState(1);
 	const perPage = window.wcpsm_migration_data.per_page * 1;
-
+	
 	useEffect(() => {
 		if (subscriptions.length === 0) {
 			setIsLoading(true);
@@ -24,7 +25,7 @@ const SubscriptionsPage = ({
 					'X-WP-Nonce': window.wcpsm_migration_data.nonce,
 				},
 			})
-				.then((response) => setSelectedSubscriptions(response.data))
+				.then((response) => setSubscriptions(response.data))
 				.catch((error) =>
 					console.error('Error fetching rollback subscriptions:', error)
 				)

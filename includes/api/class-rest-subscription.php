@@ -560,6 +560,16 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			'posts_per_page' => -1,
 			'fields'		 => 'ids',
 			'post_status'    => array_keys( wcs_get_subscription_statuses() ),
+			'meta_query'     => array(
+				array(
+					'key'     => '_wcpsm_origin_pm',
+					'compare' => 'EXISTS'
+				),
+				array(
+					'key'     => '_wcpsm_migrated_old',
+					'compare' => 'EXISTS'
+				),
+			),
 		);
 				
 		return get_posts( $args );
@@ -630,7 +640,6 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		$params 	   = $request->get_params();
 		$subscriptions = array();
 		
-		error_log( "BAMMOOOO" );
 		if ( class_exists( 'WC_Subscriptions' ) ) {
 		    $subscriptions_ids = $this->get_rollback_subscriptions();
 		    foreach ( $subscriptions_ids as $subscription_id ) {

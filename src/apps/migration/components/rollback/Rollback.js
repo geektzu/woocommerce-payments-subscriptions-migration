@@ -13,25 +13,6 @@ const Rollback = ({ goBackToBase }) => {
 	const [rollbackResults, setRollbackResults] = useState([]);
 	const [isLoading, setIsLoading] = useState(false);
 
-	useEffect(() => {
-		if (step === 1) {
-			setIsLoading(true);
-			apiFetch({
-				path: window.wcpsm_migration_data.endpoints?.get_subscriptions_rollback,
-				headers: {
-					'X-WP-Nonce': window.wcpsm_migration_data.nonce,
-				},
-			})
-				.then((response) => {
-					setSubscriptions(response.data);
-				})
-				.catch((error) =>
-					console.error('Error fetching rollback subscriptions:', error)
-				)
-				.finally(() => setIsLoading(false));
-		}
-	}, [step]);
-
 	const goToNextStep = () => {
 		setStep(step + 1);
 	};
@@ -45,6 +26,7 @@ const Rollback = ({ goBackToBase }) => {
 			{step === 1 && (
 				<SubscriptionsPage
 					subscriptions={subscriptions}
+					setSubscriptions={setSubscriptions}
 					selectedSubscriptions={selectedSubscriptions}
 					setSelectedSubscriptions={setSelectedSubscriptions}
 					goToNextStep={goToNextStep}
