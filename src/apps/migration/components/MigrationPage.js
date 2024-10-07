@@ -68,6 +68,7 @@ const MigrationPage = ({
 						subscriptions: subscriptionsBatch,
 						origin_pm: selectedOriginPayment,
 						destination_pm: selectedDestinationPayment,
+						page: page,
 					},
 				});
 	

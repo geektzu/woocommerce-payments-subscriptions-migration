@@ -171,6 +171,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		if ( $finished ) {
 			$user_id = get_current_user_id();
 			if ( $user_id ) {
+				$this->delete_subscription_migration_results_file( $user_id );
 				$this->delete_subscription_migration_file( $user_id );
 			}
 		}
@@ -216,6 +217,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		$sel_subscriptions  = ( !empty( $params['subscriptions'] ) && is_array( $params['subscriptions'] ) ) ? $params['subscriptions'] : array();
 		$origin_pm  	 	= !empty( $params['origin_pm'] ) ? $params['origin_pm'] : '';
 		$destination_pm  	= !empty( $params['destination_pm'] ) ? $params['destination_pm'] : '';
+		$page  				= !empty( $params['page'] ) ? $params['page'] : 1;
 		
 		$subscriptions_prc 	= $this->get_subscription_data( $sel_subscriptions, $origin_pm, $destination_pm );
 		$subscriptions 		= array();
@@ -231,7 +233,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		}
 		
 		$user_id = get_current_user_id();
-		if ( $user_id && $page === 1 ) {
+		if ( $user_id && $page == 1 ) {
 			$this->create_csv_file( $user_id, $subscriptions, true );
 		} else {
 			$this->create_csv_file( $user_id, $subscriptions, false );
@@ -254,27 +256,26 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	 */
 	private function create_csv_file( $user_id, $subscriptions, $replace = false ) {
 		$csv_file_path = WCPSM_DIR_PATH . "/assets/csv/subscription_migration_results_$user_id.csv";
-		$file_exists = file_exists( $csv_file_path );
+		
+		if ( $replace && file_exists( $csv_file_path ) ) {
+			unlink( $csv_file_path ); // Delete the old file
+		}
 	
-		// Open the file for writing (replace or append)
 		$mode = $replace ? 'w' : 'a';
 		$output = fopen( $csv_file_path, $mode );
 	
-		// If we're replacing the file or creating it for the first time, write the header
-		if ( $replace || !$file_exists ) {
+		if ( $replace || !file_exists( $csv_file_path ) ) {
 			$headers = array_keys( $subscriptions[0] );
 			fputcsv( $output, $headers );
 		}
 	
-		// Write each subscription row
 		foreach ( $subscriptions as $subscription ) {
 			fputcsv( $output, $subscription );
 		}
 	
-		// Close the file
 		fclose( $output );
 	}
-	
+
 	private function get_source_key( $method ) {
 		switch ( $method ) {
 			case 'stripe':
@@ -633,8 +634,21 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		return rest_ensure_response( $data );
 	}
 	
+	public function delete_subscription_migration_results_file( $user_id ) {
+	    $file_path = WCPSM_DIR_PATH . "/assets/csv/subscription_migration_results_$user_id.csv";
+	    if ( file_exists( $file_path ) ) {
+	        if ( unlink( $file_path ) ) {
+	            return true;
+	        } else {
+	            return false; 
+	        }
+	    }
+	
+	    return false;
+	}
+	
 	public function delete_subscription_migration_file( $user_id ) {
-	    $file_path = WCPSM_DIR_PATH . "/assets/csv/subscription_migration_${user_id}.csv";
+	    $file_path = WCPSM_DIR_PATH . "/assets/csv/subscription_migration_$user_id.csv";
 	    if ( file_exists( $file_path ) ) {
 	        if ( unlink( $file_path ) ) {
 	            return true;
