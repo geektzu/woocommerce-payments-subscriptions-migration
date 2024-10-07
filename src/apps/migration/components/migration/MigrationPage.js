@@ -210,7 +210,7 @@ const MigrationPage = ({
 							</p>
 						</div>
 					</div>
-					<div className="psm-migration-page__pagination">
+					<div className="wpsm-migration-page__pagination">
 						<Button
 							variant="link"
 							onClick={goToPreviousPage}

@@ -47,10 +47,12 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 				'get_subscriptions' => 'subscriptions',
 				'get_subscriptions_rollback' => 'subscriptions/rollback',
 				'dry_download' => 'dry-download',
+				'dry_download_rollback' => 'dry-download-rollback',
 			),
 			\WP_REST_Server::CREATABLE =>
 			array(
 				'dry_migrate' => 'subscriptions/dry-migrate',
+				'dry_migrate_rollback' => 'subscriptions/dry-migrate/rollback',
 				'migrate'     => 'subscriptions/migrate',
 				'validate_subscription_tokens' => 'subscription/tokens',
 				'validate_subscription_tokens_rollback' => 'subscription/tokens/rollback',
@@ -190,6 +192,34 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		return rest_ensure_response( $data );
 	}
 	
+	public function dry_download_rollback( $request ) {
+		$params = $request->get_params();
+		
+		$user_id 	   = get_current_user_id();
+		$csv_file_path = WCPSM_DIR_PATH . "/assets/csv/subscription_migration_results_rollback_$user_id.csv";
+	
+		if ( !file_exists( $csv_file_path ) ) {
+			return new WP_Error( 'rest_not_found', __( 'CSV file not found.' ), array( 'status' => 404 ) );
+		}
+	
+		$file_contents = file_get_contents( $csv_file_path );
+	
+		$headers = array(
+			'Content-Type'        => 'text/csv',
+			'Content-Disposition' => 'attachment; filename="subscription_migration_results_rollback.csv"',
+			'Cache-Control'       => 'no-cache, no-store, must-revalidate',
+			'Pragma'              => 'no-cache',
+			'Expires'             => '0',
+		);
+	
+		$response = rest_ensure_response( $file_contents );
+		foreach ( $headers as $header_key => $header_value ) {
+			$response->header( $header_key, $header_value );
+		}
+	
+		return $response;	
+	}
+	
 	public function dry_download( $request ) {
 		$params = $request->get_params();
 		
@@ -218,8 +248,41 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		return $response;	
 	}
 	
+	public function dry_migrate_rollback( $request ) {
+		$params 			= $request->get_params();
+		$sel_subscriptions  = ( !empty( $params['subscriptions'] ) && is_array( $params['subscriptions'] ) ) ? $params['subscriptions'] : array();
+		$page  				= !empty( $params['page'] ) ? $params['page'] : 1;
+		
+		$subscriptions_prc 	= $this->get_subscription_rollback_data( $sel_subscriptions );
+		$subscriptions 		= array();
+		foreach ( $subscriptions_prc as $subscription ) {
+			$subscriptions[] = array(
+				'id'		   => $subscription['id'],
+				'name' 		   => $subscription['name'],
+				'message' 	   => $subscription['message'],
+				'success'	   => $subscription['result'],
+				'warning'	   => $subscription['warning'],
+				'permalink'    => get_edit_post_link( $subscription['id'] ),
+			);
+		}
+		
+		$user_id = get_current_user_id();
+		if ( $user_id && $page == 1 ) {
+			$this->create_rollback_csv_file( $user_id, $subscriptions, true );
+		} else {
+			$this->create_rollback_csv_file( $user_id, $subscriptions, false );
+		}
+		
+		$data = array(
+			'result' => true,
+			'data'	 => $subscriptions,
+		);
+		
+		return rest_ensure_response( $data );
+	}
+	
 	public function dry_migrate( $request ) {
-		$params = $request->get_params();
+		$params 			= $request->get_params();
 		$sel_subscriptions  = ( !empty( $params['subscriptions'] ) && is_array( $params['subscriptions'] ) ) ? $params['subscriptions'] : array();
 		$origin_pm  	 	= !empty( $params['origin_pm'] ) ? $params['origin_pm'] : '';
 		$destination_pm  	= !empty( $params['destination_pm'] ) ? $params['destination_pm'] : '';
@@ -251,6 +314,28 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		);
 		
 		return rest_ensure_response( $data );
+	}
+	
+	public function create_rollback_csv_file( $user_id, $subscriptions, $replace = false ) {
+		$csv_file_path = WCPSM_DIR_PATH . "/assets/csv/subscription_migration_results_rollback_$user_id.csv";
+		
+		if ( $replace && file_exists( $csv_file_path ) ) {
+			unlink( $csv_file_path ); // Delete the old file
+		}
+	
+		$mode = $replace ? 'w' : 'a';
+		$output = fopen( $csv_file_path, $mode );
+	
+		if ( $replace || !file_exists( $csv_file_path ) ) {
+			$headers = array_keys( $subscriptions[0] );
+			fputcsv( $output, $headers );
+		}
+	
+		foreach ( $subscriptions as $subscription ) {
+			fputcsv( $output, $subscription );
+		}
+	
+		fclose( $output );
 	}
 	
 	/**
@@ -324,6 +409,96 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		}
 		
 		return '';
+	}
+	
+	private function get_subscription_rollback_data( $subscriptions_raw ) {
+		$subscriptions   = array();
+	
+		// Get the current user's ID
+		$user_id = get_current_user_id();
+		if ( !$user_id ) {
+			return $subscriptions;
+		}
+	
+		// Define the path to the saved CSV file
+		$csv_file_path = WCPSM_DIR_PATH . "/assets/csv/subscription_migration_rollback_${user_id}.csv";
+	
+		// Check if the file exists
+		if ( !file_exists( $csv_file_path ) ) {
+			return $subscriptions;
+		}
+	
+		// Read the CSV file into an associative array for efficient searching
+		$file_data = array();
+		if (($handle = fopen($csv_file_path, "r")) !== false) {
+			// Read the header
+			$header = fgetcsv($handle);
+	
+			// Ensure the headers match our expected format
+			$expected_headers = array('customer_id_old', 'source_id_old', 'customer_id_new', 'source_id_new');
+			if ($header !== $expected_headers) {
+				fclose($handle);
+				return $subscriptions;
+			}
+	
+			// Read the CSV data into an associative array
+			while (($row = fgetcsv($handle)) !== false) {
+				$token = md5( $row[0] . ':' . $row[1] );
+				$file_data[md5( "{$row[0]}:{$row[1]}" )] = array(
+					'customer_id_old' => $row[0],
+					'source_id_old'   => $row[1],
+					'customer_id_new' => $row[2],
+					'source_id_new'   => $row[3],
+				);
+			}
+			fclose($handle);
+		}
+	
+		if ( $subscriptions_raw ) {
+			foreach ( $subscriptions_raw as $subscription_raw ) {
+				$subscription_id 	= !empty( $subscription_raw['id'] ) ? intval( $subscription_raw['id'] ) : 0;
+				$subscription_name 	= !empty( $subscription_raw['name'] ) ? sanitize_text_field( $subscription_raw['name'] ) : '';
+				if ( $subscription_id ) {
+					$valid 		     = false;
+					$warning		 = false;
+					$error_message   = "Not applicable for rollback. This subscription has no matching token with the CSV file provided. It will be skipped.";
+					$subscription    = wcs_get_subscription( $subscription_id );
+					$customer_id_old = "";
+					$source_id_old   = "";
+					$customer_id_new = "";
+					$source_id_new   = "";
+	
+					if ( $subscription ) {
+						$migration_token = $subscription->get_meta( '_wcpsm_migrated_old' );
+	
+						// Check if this combination exists in the CSV data
+						if ( $migration_token ) {
+							if ( isset( $file_data[$migration_token] ) ) {
+								$customer_id_old = $file_data[$search_key]['customer_id_old'];
+								$source_id_old   = $file_data[$search_key]['source_id_old'];
+								$customer_id_new = $file_data[$search_key]['customer_id_new'];
+								$source_id_new   = $file_data[$search_key]['source_id_new'];
+								$valid = true;
+							}
+						}																		
+					}
+	
+					$subscriptions[ $subscription_id ] = array(
+						'id'             => $subscription_id,
+						'name'           => $subscription_name,
+						'source_id'      => $source_id_old,
+						'source_id_new'  => $source_id_new,
+						'customer_id'    => $customer_id_old,
+						'customer_id_new'=> $customer_id_new,
+						'result'         => $valid,
+						'warning'		 => $warning,
+						'message'        => ( $valid && !$warning ) ? "Valid" : $error_message,
+					);
+				}
+			}			
+		}
+				
+		return $subscriptions;
 	}
 	
 	private function get_subscription_data( $subscriptions_raw, $origin_pm, $destination_pm ) {
