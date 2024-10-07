@@ -170,7 +170,7 @@ const MigrationPage = ({
 								const statusColor = result
 									? result.success
 										? result.warning
-											? 'yellow'
+											? 'orange'
 											: 'green'
 										: 'red'
 									: 'gray';

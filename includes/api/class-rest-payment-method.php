@@ -80,7 +80,7 @@ class WCPSM_Rest_Payment_Method extends \WP_REST_Controller {
 		if ( function_exists( 'WC' ) ) {
 			$payment_gateways = WC()->payment_gateways->payment_gateways;
 			foreach ( $payment_gateways as $gateway ) {
-				if ( in_array( $gateway->id, array( 'authorize_net_cim_credit_card', 'stripe', 'elavon_converge_credit_card', 'braintree_credit_card' ) ) ) {
+				if ( in_array( $gateway->id, array( 'authorize_net_cim_credit_card', 'stripe', 'stripe_cc', 'elavon_converge_credit_card', 'braintree_credit_card' ) ) ) {
 			        $methods[] = array(
 			            'id'   => $gateway->id,
 			            'name' => $gateway->get_method_title(),

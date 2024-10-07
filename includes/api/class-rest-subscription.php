@@ -476,16 +476,12 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	
 	private function get_equivalent_methods( $method ) {
 		$methods = array( $method );
-		if ( $method == 'stripe' ) {
-			$methods[] = 'stripe_cc';
-		}
-		
 		return $methods;
 	}
 	
 	private function get_subscriptions_by_payment_method( $method ) {
 			
-		$methods 		 = $this->get_equivalent_methods( $method ); // Assuming this returns an array of methods
+		$methods 		 = $this->get_equivalent_methods( $method );
 		$subscriptions   = array();
 		$is_hpos_enabled = $this->is_hpos();
 		
@@ -560,7 +556,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			    );			    
 		    }		    
 		}
-				
+						
 		$data = array(
 			'result' => true,
 			'data'	 => $subscriptions,
