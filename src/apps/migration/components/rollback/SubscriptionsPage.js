@@ -93,26 +93,39 @@ const SubscriptionsPage = ({
 					{subscriptions.length > 0 ? (
 						<>
 							<div className="wpsm-migration-page__checkbox_list">
-								<CheckboxControl
-									label="Select All"
-									checked={
-										selectedSubscriptions.length ===
-										subscriptions.length
-									}
-									onChange={handleSelectAll}
-								/>
-								{currentSubscriptions.map((subscription) => (
+								<div className="wpsm-migration-page__checkbox_list_top">
 									<CheckboxControl
-										key={subscription.id}
-										label={subscription.name}
-										checked={selectedSubscriptions.some(
-											(sub) => sub.id === subscription.id
-										)}
-										onChange={() =>
-											handleCheckboxChange(subscription)
+										label="Select All"
+										checked={
+											selectedSubscriptions.length ===
+											subscriptions.length
 										}
+										onChange={handleSelectAll}
 									/>
-								))}
+									<hr />
+								</div>
+								<div className="wpsm-migration-page__checkbox_list_middle">
+									{currentSubscriptions.map((subscription) => (
+										<CheckboxControl
+											key={subscription.id}
+											label={subscription.name}
+											checked={selectedSubscriptions.some(
+												(sub) => sub.id === subscription.id
+											)}
+											onChange={() =>
+												handleCheckboxChange(subscription)
+											}
+										/>
+									))}
+								</div>
+								<div className="wpsm-migration-page__checkbox_list_bottom">
+									<hr />
+									<p className="text-footer">
+										Total subscriptions:{' '}
+										{selectedSubscriptions.length} /{' '}
+										{subscriptions.length}
+									</p>
+								</div>
 							</div>
 							<div className="wpsm-migration-page__pagination">
 								<Button

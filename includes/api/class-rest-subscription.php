@@ -560,16 +560,6 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			'posts_per_page' => -1,
 			'fields'		 => 'ids',
 			'post_status'    => array_keys( wcs_get_subscription_statuses() ),
-			'meta_query'     => array(
-				array(
-					'key'     => '_wcpsm_origin_pm',
-					'compare' => 'EXISTS'
-				),
-				array(
-					'key'     => '_wcpsm_migrated_old',
-					'compare' => 'EXISTS'
-				),
-			),
 		);
 				
 		return get_posts( $args );
