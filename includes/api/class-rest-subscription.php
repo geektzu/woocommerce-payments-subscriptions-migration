@@ -95,6 +95,41 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	
 	private function process_rollback( $subscription_data ) {
 		$result = false;
+		$subscription_id = !empty( $subscription_data['id'] ) ? intval( $subscription_data['id'] ) : 0;
+		$old_token		 = !empty( $subscription_data['source_id'] ) ? sanitize_text_field( $subscription_data['source_id'] ) : "";
+		$new_token		 = !empty( $subscription_data['source_id_new'] ) ? sanitize_text_field( $subscription_data['source_id_new'] ) : "";
+		$old_customer	 = !empty( $subscription_data['customer_id'] ) ? sanitize_text_field( $subscription_data['customer_id'] ) : "";
+		$new_customer	 = !empty( $subscription_data['customer_id_new'] ) ? sanitize_text_field( $subscription_data['customer_id_new'] ) : "";
+		$subscription	 = $subscription_id ? wcs_get_subscription( $subscription_id ) : array();
+		$origin_pm       = $subscription ? $subscription->get_meta( '_wcpsm_origin_pm' ) : '';
+		if ( !$subscription || !$old_token || !$new_token || !$old_customer || !$new_customer || !$origin_pm ) {
+			return false;
+		}
+		
+		try {
+			
+			$source_key   = $this->get_source_key( $origin_pm );
+			$customer_key = $this->get_customer_id_key( $origin_pm );
+			$tokens = WC_Payment_Tokens::get_customer_tokens( $subscription->get_customer_id(), 'woocommerce_payments' );
+			foreach ( $tokens as $tokn ) {
+				if ( $tokn->get_token() == $new_token ) {
+					$result = WC_Payment_Tokens::delete( $tokn->get_id() );
+				}
+			}
+						
+			$subscription->set_payment_method( $origin_pm );
+			$subscription->update_meta_data( $source_key, $old_token );
+			$subscription->update_meta_data( $customer_key, $old_customer );
+			$subscription->delete_meta_data( '_wcpsm_origin_pm' );
+			$subscription->delete_meta_data( '_wcpsm_migrated_old');
+			$subscription->delete_meta_data( '_wcpsm_migrated' );
+			$subscription->save();
+			$result = true;
+			
+		} catch ( Exception $e ) {
+			$result = false;
+		}
+		
 		return $result;
 	}
 	
