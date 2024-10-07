@@ -126,6 +126,8 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 					
 					$subscription->add_payment_token( $new_token_obj );
 					$subscription->set_payment_method( $destination_pm );
+					$subscription->update_meta_data( '_wcpsm_origin_pm', $origin_pm );
+					$subscription->update_meta_data( '_wcpsm_migrated_old', md5( "$old_customer:$old_token" ) );
 					$subscription->update_meta_data( '_wcpsm_migrated', md5( "$new_customer:$new_token" ) );
 					$subscription->save();
 
@@ -625,7 +627,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			    );			    
 		    }		    
 		}
-						
+								
 		$data = array(
 			'result' => true,
 			'data'	 => $subscriptions,
