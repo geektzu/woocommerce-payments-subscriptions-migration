@@ -43,6 +43,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			\WP_REST_Server::READABLE =>
 			array(
 				'get_subscriptions' => 'subscriptions',
+				'dry_download' => 'dry-download',
 			),
 			\WP_REST_Server::CREATABLE =>
 			array(
@@ -182,6 +183,34 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		return rest_ensure_response( $data );
 	}
 	
+	public function dry_download( $request ) {
+		$params = $request->get_params();
+		
+		$user_id 	   = get_current_user_id();
+		$csv_file_path = WCPSM_DIR_PATH . "/assets/csv/subscription_migration_results_$user_id.csv";
+	
+		if ( !file_exists( $csv_file_path ) ) {
+			return new WP_Error( 'rest_not_found', __( 'CSV file not found.' ), array( 'status' => 404 ) );
+		}
+	
+		$file_contents = file_get_contents( $csv_file_path );
+	
+		$headers = array(
+			'Content-Type'        => 'text/csv',
+			'Content-Disposition' => 'attachment; filename="subscription_migration_results.csv"',
+			'Cache-Control'       => 'no-cache, no-store, must-revalidate',
+			'Pragma'              => 'no-cache',
+			'Expires'             => '0',
+		);
+	
+		$response = rest_ensure_response( $file_contents );
+		foreach ( $headers as $header_key => $header_value ) {
+			$response->header( $header_key, $header_value );
+		}
+	
+		return $response;	
+	}
+	
 	public function dry_migrate( $request ) {
 		$params = $request->get_params();
 		$sel_subscriptions  = ( !empty( $params['subscriptions'] ) && is_array( $params['subscriptions'] ) ) ? $params['subscriptions'] : array();
@@ -201,12 +230,49 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			);
 		}
 		
+		$user_id = get_current_user_id();
+		if ( $user_id && $page === 1 ) {
+			$this->create_csv_file( $user_id, $subscriptions, true );
+		} else {
+			$this->create_csv_file( $user_id, $subscriptions, false );
+		}
+		
 		$data = array(
 			'result' => true,
 			'data'	 => $subscriptions,
 		);
 		
 		return rest_ensure_response( $data );
+	}
+	
+	/**
+	 * Create or append to a CSV file for the migration results.
+	 *
+	 * @param int $user_id The user ID for file naming.
+	 * @param array $subscriptions The subscription data to save.
+	 * @param bool $replace Whether to replace the file or append to it.
+	 */
+	private function create_csv_file( $user_id, $subscriptions, $replace = false ) {
+		$csv_file_path = WCPSM_DIR_PATH . "/assets/csv/subscription_migration_results_$user_id.csv";
+		$file_exists = file_exists( $csv_file_path );
+	
+		// Open the file for writing (replace or append)
+		$mode = $replace ? 'w' : 'a';
+		$output = fopen( $csv_file_path, $mode );
+	
+		// If we're replacing the file or creating it for the first time, write the header
+		if ( $replace || !$file_exists ) {
+			$headers = array_keys( $subscriptions[0] );
+			fputcsv( $output, $headers );
+		}
+	
+		// Write each subscription row
+		foreach ( $subscriptions as $subscription ) {
+			fputcsv( $output, $subscription );
+		}
+	
+		// Close the file
+		fclose( $output );
 	}
 	
 	private function get_source_key( $method ) {

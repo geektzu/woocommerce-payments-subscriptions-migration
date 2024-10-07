@@ -3,7 +3,7 @@
  */
 import { useState, useEffect } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
-import { Spinner, Button, ProgressBar } from '@wordpress/components';
+import { Spinner, Button, ProgressBar, Icon } from '@wordpress/components';
 
 const MigrationPage = ({
 	selectedSubscriptions,
@@ -34,6 +34,12 @@ const MigrationPage = ({
 			setDryRunCompleted(false);
 		};
 	}, []);
+	
+	const handleDownloadCsv = () => {
+		const url = `${window.wcpsm_migration_data.base_api}${window.wcpsm_migration_data.endpoints?.dry_download}?_wpnonce=${window.wcpsm_migration_data.nonce}`;
+
+		window.location.href = url;
+	};
 
 	const handleTest = async () => {
 		setIsProcessing(true);
@@ -249,6 +255,16 @@ const MigrationPage = ({
 						>
 							Previous
 						</Button>
+						{dryRunCompleted && (
+							<Button
+								variant="primary"
+								onClick={handleDownloadCsv}
+								disabled={isLoading || isProcessing}
+								icon="download" // Icon for download
+							>
+								Download CSV
+							</Button>
+						)}
 						<div>
 							<Button
 								variant="primary"
