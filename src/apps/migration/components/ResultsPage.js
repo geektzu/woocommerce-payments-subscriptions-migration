@@ -30,23 +30,40 @@ const ResultsPage = ({ migrationResults }) => {
 					<div className="wpsm-migration-page__checkbox_list">
 						<div className="wpsm-migration-page__checkbox_list_top"></div>
 						<div className="wpsm-migration-page__checkbox_list_middle">
-							{currentResults.map((result, index) => (
-								<p
-									key={index}
-									style={{
-										color: result.success ? 'green' : 'red',
-									}}
-								>
-									{`${result.name} - ${result.message}`}
-								</p>
-							))}
-							{/* Pagination controls */}
+							{currentResults.map((result, index) => {
+								// Replace &amp; in the permalink with &
+								const permalink = result.permalink
+									? result.permalink.replace(/&amp;/g, '&')
+									: null;
+
+								const resultName = permalink ? (
+									<a
+										href={permalink}
+										target="_blank"
+										rel="noopener noreferrer"
+									>
+										{result.name}
+									</a>
+								) : (
+									result.name
+								);
+
+								return (
+									<p
+										key={index}
+										style={{
+											color: result.success ? 'green' : 'red',
+										}}
+									>
+										{resultName} - {result.message}
+									</p>
+								);
+							})}
 						</div>
 						<div className="page__checkbox_list_bottom">
 							<hr />
 							<p className="text-footer">
-								Total migrations processed:{' '}
-								{totalMigrationsOnGreen}
+								Total migrations processed: {totalMigrationsOnGreen}
 							</p>
 						</div>
 					</div>
