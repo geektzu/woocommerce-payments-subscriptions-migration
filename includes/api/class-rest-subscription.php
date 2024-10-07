@@ -455,6 +455,9 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			case 'stripe':
 				return '_stripe_source_id';
 				break;
+			case 'stripe_cc':
+				return '_stripe_source_id';
+				break;
 			case 'authorize_net_cim_credit_card':
 				return '_wc_authorize_net_cim_credit_card_payment_token';
 				break;
@@ -475,6 +478,9 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	private function get_customer_id_key( $method ) {
 		switch ( $method ) {
 			case 'stripe':
+				return '_stripe_customer_id';
+				break;
+			case 'stripe_cc':
 				return '_stripe_customer_id';
 				break;
 			case 'authorize_net_cim_credit_card':
