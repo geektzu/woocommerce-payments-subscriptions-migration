@@ -10,6 +10,7 @@ const SubscriptionsPage = ({
 	goToPreviousStep,
 	isLoading,
 	setIsLoading,
+	goBackToBase,
 }) => {
 	const [currentPage, setCurrentPage] = useState(1);
 	const perPage = window.wcpsm_migration_data.per_page * 1;
@@ -137,7 +138,10 @@ const SubscriptionsPage = ({
 						<p>No subscriptions available for rollback.</p>
 					)}
 					<div className="wpsm-migration-page__actions">
-						<Button variant="secondary" onClick={goToPreviousStep}>
+						<Button
+							variant="secondary"
+							onClick={goBackToBase}
+						>
 							Previous
 						</Button>
 						<Button

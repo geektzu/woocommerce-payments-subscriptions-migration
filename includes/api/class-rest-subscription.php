@@ -34,6 +34,8 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 
 		return self::$instance;
 	}
+	
+	
 
 	/**
 	 * Constructor.
@@ -43,6 +45,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			\WP_REST_Server::READABLE =>
 			array(
 				'get_subscriptions' => 'subscriptions',
+				'get_subscriptions_rollback' => 'subscriptions/rollback',
 				'dry_download' => 'dry-download',
 			),
 			\WP_REST_Server::CREATABLE =>
@@ -550,6 +553,28 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		return $methods;
 	}
 	
+	private function get_rollback_subscriptions() {
+		
+		$args = array(
+			'post_type'      => 'shop_subscription',
+			'posts_per_page' => -1,
+			'fields'		 => 'ids',
+			'post_status'    => array_keys( wcs_get_subscription_statuses() ),
+			'meta_query'     => array(
+				array(
+					'key'     => '_wcpsm_origin_pm',
+					'compare' => 'EXISTS'
+				),
+				array(
+					'key'     => '_wcpsm_migrated_old',
+					'compare' => 'EXISTS'
+				),
+			),
+		);
+				
+		return get_posts( $args );
+	}
+	
 	private function get_subscriptions_by_payment_method( $method ) {
 			
 		$methods 		 = $this->get_equivalent_methods( $method );
@@ -609,6 +634,30 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		}
 		
 		return $subscriptions;
+	}
+	
+	public function get_subscriptions_rollback( $request ) {
+		$params 	   = $request->get_params();
+		$subscriptions = array();
+		
+		error_log( "BAMMOOOO" );
+		if ( class_exists( 'WC_Subscriptions' ) ) {
+		    $subscriptions_ids = $this->get_rollback_subscriptions();
+		    foreach ( $subscriptions_ids as $subscription_id ) {
+			    $subscription_obj = wcs_get_subscription( $subscription_id );
+			    $subscriptions[] = array(
+				    'id' 		=> $subscription_id,
+					'name' 		=> "Subscription #" . $subscription_id,
+			    );			    
+		    }		    
+		}
+		
+		$data = array(
+			'result' => true,
+			'data'	 => $subscriptions,
+		);
+		
+		return rest_ensure_response( $data );
 	}
 
 	public function get_subscriptions( $request ) {
