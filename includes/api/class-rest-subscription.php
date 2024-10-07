@@ -161,6 +161,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			$subscriptions[] = array(
 				'id'		   => $subscription['id'],
 				'name' 		   => $subscription['name'],
+				'permalink'    => get_edit_post_link( $subscription['id'] ),
 				'message' 	   => $message,
 				'success'	   => $result,
 			);
@@ -196,6 +197,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 				'message' 	   => $subscription['message'],
 				'success'	   => $subscription['result'],
 				'warning'	   => $subscription['warning'],
+				'permalink'    => get_edit_post_link( $subscription['id'] ),
 			);
 		}
 		
@@ -551,8 +553,8 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		    foreach ( $subscriptions_ids as $subscription_id ) {
 			    $subscription_obj = wcs_get_subscription( $subscription_id );
 			    $subscriptions[] = array(
-				    'id' 	=> $subscription_id,
-					'name' 	=> "Subscription #" . $subscription_id,
+				    'id' 		=> $subscription_id,
+					'name' 		=> "Subscription #" . $subscription_id,
 			    );			    
 		    }		    
 		}

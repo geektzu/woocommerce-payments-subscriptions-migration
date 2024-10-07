@@ -158,15 +158,14 @@ const MigrationPage = ({
 				<>
 					<div className="wpsm-migration-page__checkbox_list">
 						<div className="wpsm-migration-page__checkbox_list_top"></div>
-						<div className="wpsm-migration-page__checkbox_list_middle">
+							<div className="wpsm-migration-page__checkbox_list_middle">
 							{currentSubscriptions.map((subscription, index) => {
 								const result = testResults.find(
 									(res) => res.id === subscription.id
 								);
-								const statusText = result
-									? result.message
-									: 'Pending test';
-									
+																
+								const statusText = result ? result.message : 'Pending test';
+								
 								const statusColor = result
 									? result.success
 										? result.warning
@@ -174,11 +173,15 @@ const MigrationPage = ({
 											: 'green'
 										: 'red'
 									: 'gray';
-									
-								const subscriptionName = result
-									? result.name
-									: subscription.name;
-							
+						
+								const subscriptionName = result && typeof result.name === 'string' ? (
+									result.permalink ? (
+										<a href={result.permalink.replace(/&amp;/g, '&')} target="_blank" rel="noopener noreferrer">
+											{result.name}
+										</a>
+									) : result.name
+								) : subscription.name;
+														
 								return (
 									<p
 										key={index}
@@ -187,7 +190,7 @@ const MigrationPage = ({
 											opacity: result ? 1 : 0.5,
 										}}
 									>
-										{`${subscriptionName} - ${statusText}`}
+										{subscriptionName} - {statusText}
 									</p>
 								);
 							})}
