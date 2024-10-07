@@ -11,7 +11,7 @@ const RollbackPage = ({
 	setTestResults,
 	goToNextStep,
 	goToPreviousStep,
-	setMigrationResults,
+	setRollbackResults,
 	isLoading,
 	setIsLoading,
 }) => {
@@ -102,7 +102,7 @@ const RollbackPage = ({
 
 			try {
 				const response = await apiFetch({
-					path: wcpsm_migration_data.endpoints?.migrate_rollback,
+					path: wcpsm_migration_data.endpoints?.rollback,
 					headers: {
 						'X-WP-Nonce': wcpsm_migration_data.nonce,
 					},
@@ -112,7 +112,7 @@ const RollbackPage = ({
 						finished: page === totalBatches,
 					},
 				});
-
+				
 				allResults = [...allResults, ...response.data];
 				setProgress(((page + 1) / totalBatches) * 100);
 			} catch (error) {
@@ -120,7 +120,7 @@ const RollbackPage = ({
 			}
 		}
 
-		setMigrationResults(allResults);
+		setRollbackResults(allResults);
 		setIsProcessing(false);
 		setIsLoading(false);
 		goToNextStep();
