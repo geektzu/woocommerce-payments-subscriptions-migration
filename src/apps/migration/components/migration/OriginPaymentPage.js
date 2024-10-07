@@ -14,6 +14,7 @@ const OriginPaymentPage = ({
 	setSelectedOriginPayment,
 	goToNextStep,
 	isLoading,
+	goBackToBase,
 }) => {
 	
 	return (
@@ -60,6 +61,12 @@ const OriginPaymentPage = ({
 					</div>
 					<div className="psm-migration-page__pagination"></div>
 					<div className="wpsm-migration-page__actions">
+						<Button
+							variant="secondary"
+							onClick={goBackToBase}
+						>
+							Previous
+						</Button>
 						<Button
 							variant="primary"
 							onClick={goToNextStep}
