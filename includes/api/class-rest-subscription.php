@@ -93,7 +93,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			: WC_Payments_Customer_Service::WCPAY_LIVE_CUSTOMER_ID_OPTION;
 	}
 	
-	private function process_rollback( $subscription_data ) {
+	private function process_rollback( $subscription_data, $testing = false ) {
 		$result = false;
 		$subscription_id = !empty( $subscription_data['id'] ) ? intval( $subscription_data['id'] ) : 0;
 		$old_token		 = !empty( $subscription_data['source_id'] ) ? sanitize_text_field( $subscription_data['source_id'] ) : "";
@@ -111,19 +111,23 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			$source_key   = $this->get_source_key( $origin_pm );
 			$customer_key = $this->get_customer_id_key( $origin_pm );
 			$tokens = WC_Payment_Tokens::get_customer_tokens( $subscription->get_customer_id(), 'woocommerce_payments' );
-			foreach ( $tokens as $tokn ) {
-				if ( $tokn->get_token() == $new_token ) {
-					$result = WC_Payment_Tokens::delete( $tokn->get_id() );
+			
+			if ( !$testing ) {
+				foreach ( $tokens as $tokn ) {
+					if ( $tokn->get_token() == $new_token ) {
+						$result = WC_Payment_Tokens::delete( $tokn->get_id() );
+					}
 				}
+							
+				$subscription->set_payment_method( $origin_pm );
+				$subscription->update_meta_data( $source_key, $old_token );
+				$subscription->update_meta_data( $customer_key, $old_customer );
+				$subscription->delete_meta_data( '_wcpsm_origin_pm' );
+				$subscription->delete_meta_data( '_wcpsm_migrated_old');
+				$subscription->delete_meta_data( '_wcpsm_migrated' );
+				$subscription->save();
 			}
-						
-			$subscription->set_payment_method( $origin_pm );
-			$subscription->update_meta_data( $source_key, $old_token );
-			$subscription->update_meta_data( $customer_key, $old_customer );
-			$subscription->delete_meta_data( '_wcpsm_origin_pm' );
-			$subscription->delete_meta_data( '_wcpsm_migrated_old');
-			$subscription->delete_meta_data( '_wcpsm_migrated' );
-			$subscription->save();
+			
 			$result = true;
 			
 		} catch ( Exception $e ) {
@@ -133,7 +137,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		return $result;
 	}
 	
-	private function process_migration( $subscription_data, $origin_pm, $destination_pm ) {
+	private function process_migration( $subscription_data, $origin_pm, $destination_pm, $testing = false ) {
 		$result = false;
 		$subscription_id = !empty( $subscription_data['id'] ) ? intval( $subscription_data['id'] ) : 0;
 		$old_token		 = !empty( $subscription_data['source_id'] ) ? sanitize_text_field( $subscription_data['source_id'] ) : "";
@@ -156,30 +160,33 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 					}
 				}
 				if ( $token ) {
-
-					if ( $old_customer != $new_customer ) {
-						$subscription->update_meta_data( '_stripe_customer_id', $new_customer );
+			
+					if ( !$testing ) {
+						
+						if ( $old_customer != $new_customer ) {
+							$subscription->update_meta_data( '_stripe_customer_id', $new_customer );
+						}
+	
+						$new_token_obj = new WC_Payment_Token_CC();
+						$new_token_obj->set_gateway_id( WCPay\Payment_Methods\CC_Payment_Gateway::GATEWAY_ID );
+						$new_token_obj->set_expiry_month( $token->get_expiry_month() );
+						$new_token_obj->set_expiry_year( $token->get_expiry_year() );
+						$new_token_obj->set_card_type( $token->get_card_type() );
+						$new_token_obj->set_last4( $token->get_last4() );
+						$new_token_obj->set_token( $new_token );
+						$new_token_obj->set_user_id( $subscription->get_customer_id() );
+						$new_token_obj->save();
+						
+						$subscription->add_payment_token( $new_token_obj );
+						$subscription->set_payment_method( $destination_pm );
+						$subscription->update_meta_data( '_wcpsm_origin_pm', $origin_pm );
+						$subscription->update_meta_data( '_wcpsm_migrated_old', md5( "$old_customer:$old_token" ) );
+						$subscription->update_meta_data( '_wcpsm_migrated', md5( "$new_customer:$new_token" ) );
+						$subscription->save();
+	
+						$global = WC_Payments::is_network_saved_cards_enabled();
+						update_user_option( $subscription->get_customer_id(), $this->get_customer_id_option(), $new_customer, $global );
 					}
-
-					$new_token_obj = new WC_Payment_Token_CC();
-					$new_token_obj->set_gateway_id( WCPay\Payment_Methods\CC_Payment_Gateway::GATEWAY_ID );
-					$new_token_obj->set_expiry_month( $token->get_expiry_month() );
-					$new_token_obj->set_expiry_year( $token->get_expiry_year() );
-					$new_token_obj->set_card_type( $token->get_card_type() );
-					$new_token_obj->set_last4( $token->get_last4() );
-					$new_token_obj->set_token( $new_token );
-					$new_token_obj->set_user_id( $subscription->get_customer_id() );
-					$new_token_obj->save();
-					
-					$subscription->add_payment_token( $new_token_obj );
-					$subscription->set_payment_method( $destination_pm );
-					$subscription->update_meta_data( '_wcpsm_origin_pm', $origin_pm );
-					$subscription->update_meta_data( '_wcpsm_migrated_old', md5( "$old_customer:$old_token" ) );
-					$subscription->update_meta_data( '_wcpsm_migrated', md5( "$new_customer:$new_token" ) );
-					$subscription->save();
-
-					$global = WC_Payments::is_network_saved_cards_enabled();
-					update_user_option( $subscription->get_customer_id(), $this->get_customer_id_option(), $new_customer, $global );
 					$result = true;
 				}
 			}
@@ -274,60 +281,53 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	}
 	
 	public function dry_download_rollback( $request ) {
-		$params = $request->get_params();
-		
-		$user_id 	   = get_current_user_id();
-		$csv_file_path = WCPSM_DIR_PATH . "/assets/csv/subscription_rollback_results_$user_id.csv";
+	    $params = $request->get_params();
+	    
+	    $user_id = get_current_user_id();
+	    $csv_file_path = WCPSM_DIR_PATH . "/assets/csv/subscription_rollback_results_$user_id.csv";
 	
-		if ( !file_exists( $csv_file_path ) ) {
-			return new WP_Error( 'rest_not_found', __( 'CSV file not found.' ), array( 'status' => 404 ) );
-		}
+	    if ( !file_exists( $csv_file_path ) ) {
+	        return new WP_Error( 'rest_not_found', __( 'CSV file not found.' ), array( 'status' => 404 ) );
+	    }
 	
-		$file_contents = file_get_contents( $csv_file_path );
+	    // Set headers for the response
+	    header('Content-Type: text/csv');
+	    header('Content-Disposition: attachment; filename="subscription_rollback_results.csv"');
+	    header('Cache-Control: no-cache, no-store, must-revalidate');
+	    header('Pragma: no-cache');
+	    header('Expires: 0');
 	
-		$headers = array(
-			'Content-Type'        => 'text/csv',
-			'Content-Disposition' => 'attachment; filename="subscription_rollback_results.csv"',
-			'Cache-Control'       => 'no-cache, no-store, must-revalidate',
-			'Pragma'              => 'no-cache',
-			'Expires'             => '0',
-		);
+	    // Read the file and output its contents
+	    readfile($csv_file_path);
 	
-		$response = rest_ensure_response( $file_contents );
-		foreach ( $headers as $header_key => $header_value ) {
-			$response->header( $header_key, $header_value );
-		}
-	
-		return $response;	
+	    // Terminate the script to prevent WordPress from sending any additional content
+	    exit;
 	}
 	
 	public function dry_download( $request ) {
-		$params = $request->get_params();
-		
-		$user_id 	   = get_current_user_id();
-		$csv_file_path = WCPSM_DIR_PATH . "/assets/csv/subscription_migration_results_$user_id.csv";
+	    $params = $request->get_params();
+	    
+	    $user_id = get_current_user_id();
+	    $csv_file_path = WCPSM_DIR_PATH . "/assets/csv/subscription_migration_results_$user_id.csv";
 	
-		if ( !file_exists( $csv_file_path ) ) {
-			return new WP_Error( 'rest_not_found', __( 'CSV file not found.' ), array( 'status' => 404 ) );
-		}
+	    if ( !file_exists( $csv_file_path ) ) {
+	        return new WP_Error( 'rest_not_found', __( 'CSV file not found.' ), array( 'status' => 404 ) );
+	    }
 	
-		$file_contents = file_get_contents( $csv_file_path );
+	    // Set headers for the response
+	    header('Content-Type: text/csv');
+	    header('Content-Disposition: attachment; filename="subscription_migration_results.csv"');
+	    header('Cache-Control: no-cache, no-store, must-revalidate');
+	    header('Pragma: no-cache');
+	    header('Expires: 0');
 	
-		$headers = array(
-			'Content-Type'        => 'text/csv',
-			'Content-Disposition' => 'attachment; filename="subscription_migration_results.csv"',
-			'Cache-Control'       => 'no-cache, no-store, must-revalidate',
-			'Pragma'              => 'no-cache',
-			'Expires'             => '0',
-		);
+	    // Read the file and output its contents
+	    readfile($csv_file_path);
 	
-		$response = rest_ensure_response( $file_contents );
-		foreach ( $headers as $header_key => $header_value ) {
-			$response->header( $header_key, $header_value );
-		}
-	
-		return $response;	
+	    // Terminate the script to prevent WordPress from sending any additional content
+	    exit;
 	}
+
 	
 	public function dry_migrate_rollback( $request ) {
 		$params 			= $request->get_params();
@@ -337,12 +337,24 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		$subscriptions_prc 	= $this->get_subscription_rollback_data( $sel_subscriptions );
 		$subscriptions 		= array();
 		foreach ( $subscriptions_prc as $subscription ) {
+			
+			$result  = $subscription['result'];
+			$message = $subscription['message'];
+			$warning = $subscription['warning'];
+			if ( $result && !$warning ) {
+				$migrated_valid = $this->process_rollback( $subscription, true );
+				if ( !$migrated_valid ) {
+					$result  = false;
+					$message = 'Could not find token on existing payment methods.';
+				}
+			}
+			
 			$subscriptions[] = array(
 				'id'		   => $subscription['id'],
 				'name' 		   => $subscription['name'],
-				'message' 	   => $subscription['message'],
-				'success'	   => $subscription['result'],
-				'warning'	   => $subscription['warning'],
+				'message' 	   => $message,
+				'success'	   => $result,
+				'warning'	   => $warning,
 				'permalink'    => get_edit_post_link( $subscription['id'] ),
 			);
 		}
@@ -374,12 +386,24 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		$subscriptions_prc 	= $this->get_subscription_data( $sel_subscriptions, $origin_pm, $destination_pm );
 		$subscriptions 		= array();
 		foreach ( $subscriptions_prc as $subscription ) {
+			
+			$result  = $subscription['result'];
+			$message = $subscription['message'];
+			$warning = $subscription['warning'];
+			if ( $result && !$warning ) {
+				$migrated_valid = $this->process_migration( $subscription, $origin_pm, $destination_pm, true );
+				if ( !$migrated_valid ) {
+					$result  = false;
+					$message = 'Could not find token on existing payment methods.';
+				}
+			}
+			
 			$subscriptions[] = array(
 				'id'		   => $subscription['id'],
 				'name' 		   => $subscription['name'],
-				'message' 	   => $subscription['message'],
-				'success'	   => $subscription['result'],
-				'warning'	   => $subscription['warning'],
+				'message' 	   => $message,
+				'success'	   => $result,
+				'warning'	   => $warning,
 				'permalink'    => get_edit_post_link( $subscription['id'] ),
 			);
 		}
