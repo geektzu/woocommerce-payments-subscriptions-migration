@@ -35,8 +35,6 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		return self::$instance;
 	}
 	
-	
-
 	/**
 	 * Constructor.
 	 */
@@ -621,6 +619,24 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		return $subscriptions;
 	}
 	
+	private function is_invalid_subscription_email( $subscription, $customer_id, $source_id ) {
+		$sub_email 				= $subscription->get_billing_email();
+		$payments_api_client    = WC_Payments::get_payments_api_client();
+		$stripe_payment_methods = $payments_api_client->get_payment_methods( $customer_id, 'card' )['data'];
+		if ( $stripe_payment_methods ) {
+			foreach ( $stripe_payment_methods as $stripe_payment_method ) {
+				if ( $stripe_payment_method['id'] === $source_id ) {
+					$payment_email = !empty( $stripe_payment_method['billing_details']['email'] ) ? $stripe_payment_method['billing_details']['email'] : '';
+					if ( $payment_email && $sub_email && $payment_email !== $sub_email ) {
+						return "Emails missmatch: Subscription email: $sub_email | Payment email: $payment_email.";
+					}
+				}
+			}
+		}
+		
+		return false;
+	}
+	
 	private function get_subscription_data( $subscriptions_raw, $origin_pm, $destination_pm ) {
 		$subscriptions   = array();
 		$source_key   	 = $this->get_source_key( $origin_pm );
@@ -685,26 +701,34 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 							if ( isset( $file_data[$search_key] ) ) {
 								$customer_id_new = $file_data[$search_key]['customer_id_new'];
 								$source_id_new   = $file_data[$search_key]['source_id_new'];
-	
-								// Check if there's an existing subscription with destination_pm and matching _stripe_customer_id
-								$existing_subscriptions = wcs_get_subscriptions( array(
-									'payment_method' => $destination_pm,
-									'subscription_status' => array_keys( wcs_get_subscription_statuses() ),
-									'meta_query' => array(
-										array(
-											'key'   => '_wcpsm_migrated',
-											'compare' => '=',
-											'value' => md5( "$customer_id_new:$source_id_new" )
-										),
-									),
-								));
-									
-								if ( !empty( $existing_subscriptions ) ) {
-									$error_message = "A subscription with the destination payment method already exists with new customer and token data.";
+								
+								$invalid_email = $this->is_invalid_subscription_email( $subscription, $customer_id_new, $source_id_new );
+								if ( $invalid_email ) {
+									$error_message = $invalid_email;
 									$valid = true;
 									$warning = true;
 								} else {
-									$valid = true;
+		
+									// Check if there's an existing subscription with destination_pm and matching _stripe_customer_id
+									$existing_subscriptions = wcs_get_subscriptions( array(
+										'payment_method' => $destination_pm,
+										'subscription_status' => array_keys( wcs_get_subscription_statuses() ),
+										'meta_query' => array(
+											array(
+												'key'   => '_wcpsm_migrated',
+												'compare' => '=',
+												'value' => md5( "$customer_id_new:$source_id_new" )
+											),
+										),
+									));
+										
+									if ( !empty( $existing_subscriptions ) ) {
+										$error_message = "A subscription with the destination payment method already exists with new customer and token data.";
+										$valid = true;
+										$warning = true;
+									} else {
+										$valid = true;
+									}
 								}
 							}
 						}
