@@ -112,13 +112,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			$customer_key = $this->get_customer_id_key( $origin_pm );
 			$tokens = WC_Payment_Tokens::get_customer_tokens( $subscription->get_customer_id(), 'woocommerce_payments' );
 			
-			if ( !$testing ) {
-				foreach ( $tokens as $tokn ) {
-					if ( $tokn->get_token() == $new_token ) {
-						$result = WC_Payment_Tokens::delete( $tokn->get_id() );
-					}
-				}
-							
+			if ( !$testing ) {							
 				$subscription->set_payment_method( $origin_pm );
 				$subscription->update_meta_data( $source_key, $old_token );
 				$subscription->update_meta_data( $customer_key, $old_customer );
@@ -137,8 +131,16 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		return $result;
 	}
 	
+	private function search_payment_token_by_stripe_id( $saved_payment_tokens, $stripe_payment_method_id ) {
+		foreach ( $saved_payment_tokens as $saved_payment_token ) {
+			if ( $stripe_payment_method_id === $saved_payment_token->get_token() ) {
+				return $saved_payment_token;
+			}
+		}
+	}
+	
 	private function process_migration( $subscription_data, $origin_pm, $destination_pm, $testing = false ) {
-		$result = false;
+		
 		$subscription_id = !empty( $subscription_data['id'] ) ? intval( $subscription_data['id'] ) : 0;
 		$old_token		 = !empty( $subscription_data['source_id'] ) ? sanitize_text_field( $subscription_data['source_id'] ) : "";
 		$new_token		 = !empty( $subscription_data['source_id_new'] ) ? sanitize_text_field( $subscription_data['source_id_new'] ) : "";
@@ -150,51 +152,55 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		}
 		
 		try {
-
-			$tokens = WC_Payment_Tokens::get_customer_tokens( $subscription->get_customer_id(), $origin_pm );
-			if ( $tokens ) {
-				$token = array();
-				foreach ( $tokens as $tokn ) {
-					if ( $tokn->get_token() == $old_token ) {
-						$token = $tokn;
-					}
-				}
-				if ( $token ) {
 			
-					if ( !$testing ) {
-						
-						if ( $old_customer != $new_customer ) {
-							$subscription->update_meta_data( '_stripe_customer_id', $new_customer );
-						}
-	
-						$new_token_obj = new WC_Payment_Token_CC();
-						$new_token_obj->set_gateway_id( WCPay\Payment_Methods\CC_Payment_Gateway::GATEWAY_ID );
-						$new_token_obj->set_expiry_month( $token->get_expiry_month() );
-						$new_token_obj->set_expiry_year( $token->get_expiry_year() );
-						$new_token_obj->set_card_type( $token->get_card_type() );
-						$new_token_obj->set_last4( $token->get_last4() );
-						$new_token_obj->set_token( $new_token );
-						$new_token_obj->set_user_id( $subscription->get_customer_id() );
-						$new_token_obj->save();
-						
-						$subscription->add_payment_token( $new_token_obj );
-						$subscription->set_payment_method( $destination_pm );
-						$subscription->update_meta_data( '_wcpsm_origin_pm', $origin_pm );
-						$subscription->update_meta_data( '_wcpsm_migrated_old', md5( "$old_customer:$old_token" ) );
-						$subscription->update_meta_data( '_wcpsm_migrated', md5( "$new_customer:$new_token" ) );
-						$subscription->save();
-	
-						$global = WC_Payments::is_network_saved_cards_enabled();
-						update_user_option( $subscription->get_customer_id(), $this->get_customer_id_option(), $new_customer, $global );
+			$payments_api_client    = WC_Payments::get_payments_api_client();
+			$stripe_payment_methods = $payments_api_client->get_payment_methods( $new_customer, 'card' )['data'];
+			$saved_payment_tokens   = WC_Payment_Tokens::get_customer_tokens( $subscription->get_customer_id(), \WCPay\Payment_Methods\CC_Payment_Gateway::GATEWAY_ID );
+			
+			if ( $testing ) {
+				return $stripe_payment_methods ? true : false;
+			}
+			
+			$token = null;
+			foreach ( $stripe_payment_methods as $stripe_payment_method ) {
+				
+				if ( $stripe_payment_method['id'] == $new_token ) {
+										
+					// Prevents duplication of payment methods.
+					$token = $this->search_payment_token_by_stripe_id( $saved_payment_tokens, $stripe_payment_method['id'] );
+												
+					if ( ! $token ) {
+						$token = new WC_Payment_Token_CC();
 					}
-					$result = true;
+		
+					$token->set_gateway_id( \WCPay\Payment_Methods\CC_Payment_Gateway::GATEWAY_ID );
+					$token->set_expiry_month( $stripe_payment_method['card']['exp_month'] );
+					$token->set_expiry_year( $stripe_payment_method['card']['exp_year'] );
+					$token->set_card_type( strtolower( $stripe_payment_method['card']['brand'] ) );
+					$token->set_last4( $stripe_payment_method['card']['last4'] );
+					$token->set_token( $stripe_payment_method['id'] );
+					$token->set_user_id( $subscription->get_customer_id() );
+					$token->save();
 				}
 			}
+			
+			if ( $token ) {
+				$subscription->add_payment_token( $token );
+				$subscription->set_payment_method( $destination_pm );
+				$subscription->update_meta_data( '_wcpsm_origin_pm', $origin_pm );
+				$subscription->update_meta_data( '_wcpsm_migrated_old', md5( "$old_customer:$old_token" ) );
+				$subscription->update_meta_data( '_wcpsm_migrated', md5( "$new_customer:$new_token" ) );
+				$subscription->save();
+
+				$global = WC_Payments::is_network_saved_cards_enabled();
+				update_user_option( $subscription->get_customer_id(), $this->get_customer_id_option(), $new_customer, $global );
+				return true;
+			}
 		} catch ( Exception $e ) {
-			$result = false;
+			return false;
 		}
 
-		return $result;
+		return false;
 	}
 	
 	public function rollback( $request ) {
@@ -341,7 +347,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			$result  = $subscription['result'];
 			$message = $subscription['message'];
 			$warning = $subscription['warning'];
-			if ( $result && !$warning ) {
+			if ( $result ) {
 				$migrated_valid = $this->process_rollback( $subscription, true );
 				if ( !$migrated_valid ) {
 					$result  = false;
@@ -390,7 +396,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			$result  = $subscription['result'];
 			$message = $subscription['message'];
 			$warning = $subscription['warning'];
-			if ( $result && !$warning ) {
+			if ( $result ) {
 				$migrated_valid = $this->process_migration( $subscription, $origin_pm, $destination_pm, true );
 				if ( !$migrated_valid ) {
 					$result  = false;
@@ -480,7 +486,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 				return '_stripe_source_id';
 				break;
 			case 'stripe_cc':
-				return '_stripe_source_id';
+				return '_payment_method_token';
 				break;
 			case 'authorize_net_cim_credit_card':
 				return '_wc_authorize_net_cim_credit_card_payment_token';
@@ -500,12 +506,13 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	}
 	
 	private function get_customer_id_key( $method ) {
+		
 		switch ( $method ) {
 			case 'stripe':
 				return '_stripe_customer_id';
 				break;
 			case 'stripe_cc':
-				return '_stripe_customer_id';
+				return '_wc_stripe_customer';
 				break;
 			case 'authorize_net_cim_credit_card':
 				return '_wc_authorize_net_cim_credit_card_customer_id';
@@ -566,7 +573,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			}
 			fclose($handle);
 		}
-			
+					
 		if ( $subscriptions_raw ) {
 			foreach ( $subscriptions_raw as $subscription_raw ) {
 				$subscription_id 	= !empty( $subscription_raw['id'] ) ? intval( $subscription_raw['id'] ) : 0;
@@ -668,7 +675,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 					$customer_id_new = "";
 					$source_id_new   = "";
 	
-					if ( $subscription ) {
+					if ( $subscription ) {						
 						$source 	 = $subscription->get_meta( $source_key );
 						$customer_id = $subscription->get_meta( $customer_id_key );
 	
