@@ -354,12 +354,14 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			}
 			
 			$subscriptions[] = array(
-				'id'		   => $subscription['id'],
-				'name' 		   => $subscription['name'],
-				'message' 	   => $message,
-				'success'	   => $result,
-				'warning'	   => $warning,
-				'permalink'    => get_edit_post_link( $subscription['id'] ),
+				'id'		   		 => $subscription['id'],
+				'name' 		   		 => $subscription['name'],
+				'message' 	   		 => $message,
+				'success'	   		 => $result,
+				'warning'	   		 => $warning,
+				'subscription_email' => $subscription['subscription_email'] ?? "",
+				'payment_email'		 => $subscription['payment_email'] ?? "",
+				'permalink'   		 => get_edit_post_link( $subscription['id'] ),
 			);
 		}
 				
@@ -388,7 +390,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		$page  				= !empty( $params['page'] ) ? $params['page'] : 1;
 		
 		$subscriptions_prc 	= $this->get_subscription_data( $sel_subscriptions, $origin_pm, $destination_pm );
-		$subscriptions 		= array();
+		$subscriptions = array();
 		foreach ( $subscriptions_prc as $subscription ) {
 			
 			$result  = $subscription['result'];
@@ -403,12 +405,13 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			}
 			
 			$subscriptions[] = array(
-				'id'		   => $subscription['id'],
-				'name' 		   => $subscription['name'],
-				'message' 	   => $message,
-				'success'	   => $result,
-				'warning'	   => $warning,
-				'permalink'    => get_edit_post_link( $subscription['id'] ),
+				'id'		   		 => $subscription['id'],
+				'name' 		   		 => $subscription['name'],
+				'message' 	   		 => $message,
+				'success'	   		 => $result,
+				'warning'	   		 => $warning,
+				'subscription_email' => $subscription['subscription_email'] ?? "",
+				'permalink'    		 => get_edit_post_link( $subscription['id'] ),
 			);
 		}
 		
@@ -462,7 +465,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		if ( $replace && file_exists( $csv_file_path ) ) {
 			unlink( $csv_file_path ); // Delete the old file
 		}
-	
+			
 		$mode = $replace ? 'w' : 'a';
 		$output = fopen( $csv_file_path, $mode );
 	
@@ -602,15 +605,17 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 					}
 	
 					$subscriptions[ $subscription_id ] = array(
-						'id'             => $subscription_id,
-						'name'           => $subscription_name,
-						'source_id'      => $source_id_old,
-						'source_id_new'  => $source_id_new,
-						'customer_id'    => $customer_id_old,
-						'customer_id_new'=> $customer_id_new,
-						'result'         => $valid,
-						'warning'		 => $warning,
-						'message'        => ( $valid && !$warning ) ? "Valid" : $error_message,
+						'id'             	 => $subscription_id,
+						'name'           	 => $subscription_name,
+						'source_id'      	 => $source_id_old,
+						'source_id_new'  	 => $source_id_new,
+						'customer_id'    	 => $customer_id_old,
+						'customer_id_new'	 => $customer_id_new,
+						'subscription_email' => $subscription->get_billing_email(),
+						'payment_email'		 => $this->get_payment_email( $customer_id_new, $source_id_new ),
+						'result'         	 => $valid,
+						'warning'		 	 => $warning,
+						'message'        	 => ( $valid && !$warning ) ? "Valid" : $error_message,
 					);
 				}
 			}			
@@ -619,6 +624,25 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		return $subscriptions;
 	}
 	
+	private function get_payment_email( $customer_id, $source_id ) {
+		try {			
+			$payments_api_client    = WC_Payments::get_payments_api_client();
+			$stripe_payment_methods = $payments_api_client->get_payment_methods( $customer_id, 'card' )['data'];
+			if ( $stripe_payment_methods ) {
+				foreach ( $stripe_payment_methods as $stripe_payment_method ) {
+					if ( $stripe_payment_method['id'] === $source_id ) {
+						$payment_email = !empty( $stripe_payment_method['billing_details']['email'] ) ? $stripe_payment_method['billing_details']['email'] : '';
+						return $payment_email;
+					}
+				}
+			}
+		} catch ( Exception $e ) {
+			return "";
+		}
+		
+		return "";
+	}
+		
 	private function is_invalid_subscription_email( $subscription, $customer_id, $source_id ) {
 		$sub_email 				= $subscription->get_billing_email();
 		$payments_api_client    = WC_Payments::get_payments_api_client();
@@ -740,15 +764,16 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 					}
 	
 					$subscriptions[ $subscription_id ] = array(
-						'id'             => $subscription_id,
-						'name'           => $subscription_name,
-						'source_id'      => $source,
-						'source_id_new'  => $source_id_new,
-						'customer_id'    => $customer_id,
-						'customer_id_new'=> $customer_id_new,
-						'result'         => $valid,
-						'warning'		 => $warning,
-						'message'        => ( $valid && !$warning ) ? "Valid" : $error_message,
+						'id'             	 => $subscription_id,
+						'name'           	 => $subscription_name,
+						'source_id'      	 => $source,
+						'source_id_new'  	 => $source_id_new,
+						'customer_id'    	 => $customer_id,
+						'customer_id_new'	 => $customer_id_new,
+						'subscription_email' => $subscription->get_billing_email(),
+						'result'         	 => $valid,
+						'warning'		 	 => $warning,
+						'message'        	 => ( $valid && !$warning ) ? "Valid" : $error_message,
 					);
 				}
 			}			
