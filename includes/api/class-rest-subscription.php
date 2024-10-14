@@ -814,7 +814,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	    $uploaded_file = $files['file'];
 	
 	    // Check file type (ensure it's a CSV)
-	    $file_type = mime_content_type( $uploaded_file['tmp_name'] );
+	    $file_type = !empty( $uploaded_file['type'] ) ? $uploaded_file['type'] : mime_content_type( $uploaded_file['tmp_name'] );
 	    if ( $file_type !== 'text/csv' ) {
 	        return rest_ensure_response( array(
 	            'result'  => false,
@@ -876,7 +876,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	    $uploaded_file = $files['file'];
 	
 	    // Check file type (ensure it's a CSV)
-	    $file_type = mime_content_type( $uploaded_file['tmp_name'] );
+	    $file_type = !empty( $uploaded_file['type'] ) ? $uploaded_file['type'] : mime_content_type( $uploaded_file['tmp_name'] );
 	    if ( $file_type !== 'text/csv' ) {
 	        return rest_ensure_response( array(
 	            'result'  => false,
