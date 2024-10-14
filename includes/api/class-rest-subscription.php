@@ -100,6 +100,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		$new_customer	 = !empty( $subscription_data['customer_id_new'] ) ? sanitize_text_field( $subscription_data['customer_id_new'] ) : "";
 		$subscription	 = $subscription_id ? wcs_get_subscription( $subscription_id ) : array();
 		$origin_pm       = $subscription ? $subscription->get_meta( '_wcpsm_origin_pm' ) : '';
+		$origin_pm       = $origin_pm == 'custom' ? 'manual' : $origin_pm;
 		if ( !$subscription || !$old_token || !$new_token || !$old_customer || !$new_customer || !$origin_pm ) {
 			return false;
 		}
@@ -986,8 +987,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			
 		$methods 		 = $this->get_equivalent_methods( $method );
 		$subscriptions   = array();
-		$is_hpos_enabled = $this->is_hpos();
-		
+		$is_hpos_enabled = $this->is_hpos();		
 		if ( $method == 'custom' ) {
 			$args = array(
 				'post_type'      => 'shop_subscription',
