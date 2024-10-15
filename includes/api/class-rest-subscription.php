@@ -764,6 +764,23 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 							$valid = false;
 						}
 					}
+										
+					if ( $valid ) {
+					    if ( isset( $subscription_customers[$customer_id] ) ) {
+					        $existing_subscription_data = $subscription_customers[$customer_id];
+					        if ( isset( $existing_subscription_data[$customer_id_new] ) ) {
+					            $subscription_customers[$customer_id][$customer_id_new] = $subscription_id;
+					        } else {
+					            $valid = false;
+					            $old_customer_id_new = key($existing_subscription_data);
+					            $old_subscription_id = reset($existing_subscription_data);
+					
+					            $error_message = "Old customer ID $customer_id already exists in subscription #$old_subscription_id with a different new customer ID: $old_customer_id_new.";
+					        }
+					    } else {
+					        $subscription_customers[$customer_id][$customer_id_new] = $subscription_id;
+					    }
+					}
 	
 					$subscriptions[ $subscription_id ] = array(
 						'id'             	 => $subscription_id,
