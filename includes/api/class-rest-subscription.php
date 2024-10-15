@@ -965,7 +965,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		
 		$args = array(
 			'post_type'      => 'shop_subscription',
-			'posts_per_page' => -1,
+			'posts_per_page' => 5000,
 			'fields'		 => 'ids',
 			'post_status'    => array_keys( wcs_get_subscription_statuses() ),
 			'meta_query'     => array(
@@ -991,7 +991,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		if ( $method == 'custom' ) {
 			$args = array(
 				'post_type'      => 'shop_subscription',
-				'posts_per_page' => -1,
+				'posts_per_page' => 5000,
 				'fields'		 => 'ids',
 				'post_status'    => array_keys( wcs_get_subscription_statuses() ),
 				'meta_query'     => array(
@@ -1014,17 +1014,17 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 	
 				// Prepare placeholders for SQL IN clause
 				$placeholders = implode( ',', array_fill( 0, count( $methods ), '%s' ) );
-				
+								
 				$query = $wpdb->prepare(
-					"SELECT * FROM $table_name WHERE type = %s AND payment_method IN ($placeholders)",
-					array_merge( array( 'shop_subscription' ), $methods ) // First is the type, then the methods
-				);
+			        "SELECT * FROM $table_name WHERE type = %s AND payment_method IN ($placeholders) LIMIT 5000",
+			        array_merge( array( 'shop_subscription' ), $methods ) // First is the type, then the methods
+			    );
 				
 				$subscriptions = $wpdb->get_col( $query );
 			} else {		    
 				$args = array(
 					'post_type'      => 'shop_subscription',
-					'posts_per_page' => -1,
+					'posts_per_page' => 5000,
 					'fields'		 => 'ids',
 					'post_status'    => array_keys( wcs_get_subscription_statuses() ),
 					'meta_query'     => array(
