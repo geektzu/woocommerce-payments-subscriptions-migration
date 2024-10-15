@@ -979,6 +979,14 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 					'key'     => '_wcpsm_migrated_old',
 					'compare' => 'EXISTS'
 				),
+				array(
+					'key'     => '_wc_dp_payment_token',
+					'compare' => 'NOT EXISTS'
+				),
+				array(
+					'key'     => '_wc_dp_customer_id',
+					'compare' => 'NOT EXISTS'
+				),
 			),
 		);
 				
