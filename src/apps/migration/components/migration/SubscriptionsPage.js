@@ -142,7 +142,7 @@ const SubscriptionsPage = ({
 											    />
 											    <span style={{ margin: '0 8px' }}>-</span>
 											    <a
-											        href={subscription?.permalink}
+											        href={subscription?.permalink.replace(/&amp;/g, '&')}
 											        target="_blank"
 											        rel="noopener noreferrer"
 											        style={{ color: '#0073aa', textDecoration: 'none' }}
