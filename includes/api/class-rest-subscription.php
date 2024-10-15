@@ -1003,6 +1003,10 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 						'key'     => '_wc_dp_customer_id',
 						'compare' => 'EXISTS'
 					),
+					array(
+						'key'     => '_wcpsm_migrated',
+						'compare' => 'NOT EXISTS'
+					),
 				),
 			);
 			
