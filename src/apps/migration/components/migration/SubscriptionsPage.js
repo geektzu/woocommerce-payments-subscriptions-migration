@@ -96,7 +96,7 @@ const SubscriptionsPage = ({
 			setCurrentPage(currentPage - 1);
 		}
 	};
-
+	
 	return (
 		<div className="wpsm-migration-page">
 			<h2>Select Subscriptions</h2>
@@ -129,20 +129,27 @@ const SubscriptionsPage = ({
 								<div className="wpsm-migration-page__checkbox_list_middle">
 									{currentSubscriptions.map(
 										(subscription) => (
-											<CheckboxControl
-												key={subscription.id}
-												label={subscription.name}
-												checked={selectedSubscriptions.some(
-													(sub) =>
-														sub.id ===
-														subscription.id
-												)}
-												onChange={() =>
-													handleCheckboxChange(
-														subscription
-													)
-												}
-											/>
+											<div
+											    key={subscription.id}
+											    className="wpsm-migration-page__checkbox_item"
+											>
+											    <CheckboxControl
+											        label={subscription.name}
+											        checked={selectedSubscriptions.some(
+											            (sub) => sub.id === subscription.id
+											        )}
+											        onChange={() => handleCheckboxChange(subscription)}
+											    />
+											    <span style={{ margin: '0 8px' }}>-</span>
+											    <a
+											        href={subscription?.permalink}
+											        target="_blank"
+											        rel="noopener noreferrer"
+											        style={{ color: '#0073aa', textDecoration: 'none' }}
+											    >
+											        View
+											    </a>
+											</div>
 										)
 									)}
 								</div>

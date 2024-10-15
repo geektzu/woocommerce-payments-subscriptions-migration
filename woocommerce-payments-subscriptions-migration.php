@@ -70,13 +70,7 @@ if ( ! class_exists( 'wcpay_subscriptions_migration' ) ) {
 				WCPSM_Rest::get_instance();
 
 				if ( is_admin() ) {
-
-					include_once WCPSM_DIR_PATH . 'includes/admin/token-migrate.php';
-					include_once WCPSM_DIR_PATH . 'includes/admin/admin.php';
-					include_once WCPSM_DIR_PATH . 'includes/admin/migrate.php';
 					include_once WCPSM_DIR_PATH . 'includes/class-settings.php';
-
-					new WCPSM_Admin();
 					new WCPSM_Settings();
 				}
 			}

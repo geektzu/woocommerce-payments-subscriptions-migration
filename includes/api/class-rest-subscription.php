@@ -970,24 +970,6 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			'posts_per_page' => 5000,
 			'fields'		 => 'ids',
 			'post_status'    => array_keys( wcs_get_subscription_statuses() ),
-			'meta_query'     => array(
-				array(
-					'key'     => '_wcpsm_origin_pm',
-					'compare' => 'EXISTS'
-				),
-				array(
-					'key'     => '_wcpsm_migrated_old',
-					'compare' => 'EXISTS'
-				),
-				array(
-					'key'     => '_wc_dp_payment_token',
-					'compare' => 'NOT EXISTS'
-				),
-				array(
-					'key'     => '_wc_dp_customer_id',
-					'compare' => 'NOT EXISTS'
-				),
-			),
 		);
 				
 		return get_posts( $args );
@@ -1068,6 +1050,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			    $subscriptions[] = array(
 				    'id' 		=> $subscription_id,
 					'name' 		=> "Subscription #" . $subscription_id,
+					'permalink' => get_edit_post_link( $subscription_id ),
 			    );			    
 		    }		    
 		}
@@ -1093,6 +1076,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			    $subscriptions[] = array(
 				    'id' 		=> $subscription_id,
 					'name' 		=> "Subscription #" . $subscription_id,
+					'permalink' => get_edit_post_link( $subscription_id ),
 			    );			    
 		    }		    
 		}

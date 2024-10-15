@@ -117,5 +117,15 @@ svg.components-checkbox-control__checked {
 				margin-left: auto;
 			}
 		}
+		
+		.wpsm-migration-page__checkbox_item {
+			display: flex;
+			align-items: center;
+		    margin-bottom: calc(8px);
+		    
+		    .components-base-control__field {
+			    margin-bottom: 0;
+		    }
+		}
 	}
 }
