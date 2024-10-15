@@ -412,6 +412,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 				'success'	   		 => $result,
 				'warning'	   		 => $warning,
 				'subscription_email' => $subscription['subscription_email'] ?? "",
+				'payment_email'		 => $subscription['payment_email'] ?? "",
 				'permalink'    		 => get_edit_post_link( $subscription['id'] ),
 			);
 		}
@@ -772,6 +773,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 						'customer_id'    	 => $customer_id,
 						'customer_id_new'	 => $customer_id_new,
 						'subscription_email' => $subscription->get_billing_email(),
+						'payment_email'		 => $this->get_payment_email( $customer_id_new, $source_id_new ),
 						'result'         	 => $valid,
 						'warning'		 	 => $warning,
 						'message'        	 => ( $valid && !$warning ) ? "Valid" : $error_message,
