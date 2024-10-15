@@ -130,6 +130,10 @@ if ( ! class_exists( 'wcpay_subscriptions_migration' ) ) {
 
 			wp_register_script( $name, WCPSM_DIR_URL . 'build-extensions/' . $script . '.js', $asset_file['dependencies'], $asset_file['version'], true );
 			wp_enqueue_script( $name );
+			
+			if ( !class_exists( 'WCPSM_Rest' ) ) {
+				include_once WCPSM_DIR_PATH . 'includes/api/class-rest.php';
+			}
 
 			$rest      = WCPSM_Rest::get_instance();
 			$endpoints = $rest->get_api_endpoints();
