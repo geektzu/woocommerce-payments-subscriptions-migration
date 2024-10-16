@@ -1108,13 +1108,19 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		    $subscriptions_ids = $this->get_subscriptions_by_payment_method( $origin_pm );
 		    foreach ( $subscriptions_ids as $subscription_id ) {
 			    $subscription_obj = wcs_get_subscription( $subscription_id );
+			    $next_payment 	  = $subscription_obj->get_date( 'next_payment' );
 			    $subscriptions[] = array(
-				    'id' 		=> $subscription_id,
-					'name' 		=> "Subscription #" . $subscription_id,
-					'permalink' => get_edit_post_link( $subscription_id ),
+				    'id' 		  => $subscription_id,
+					'name' 		  => "Subscription #" . $subscription_id,
+					'permalink'   => get_edit_post_link( $subscription_id ),
+					'next_payment'=> $next_payment ? strtotime( $next_payment ) : 0,
 			    );			    
 		    }		    
 		}
+		
+		usort( $subscriptions, function( $a, $b ) {
+            return $a['next_payment'] - $b['next_payment']; // ASC sorting
+        });
 								
 		$data = array(
 			'result' => true,

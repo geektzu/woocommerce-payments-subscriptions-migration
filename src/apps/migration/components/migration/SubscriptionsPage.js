@@ -23,6 +23,11 @@ const SubscriptionsPage = ({
 }) => {
 	const [currentPage, setCurrentPage] = useState(1);
 	const perPage = window.wcpsm_migration_data.per_page * 1;
+	
+	const formatDate = (timestamp) => {
+		const date = new Date(timestamp * 1000);
+		return date.toISOString().split('T')[0];
+	};
 
 	useEffect(() => {
 		if (selectedOriginPayment) {
@@ -141,14 +146,16 @@ const SubscriptionsPage = ({
 											        onChange={() => handleCheckboxChange(subscription)}
 											    />
 											    <span style={{ margin: '0 8px' }}>-</span>
-											    <a
-											        href={subscription?.permalink.replace(/&amp;/g, '&')}
-											        target="_blank"
-											        rel="noopener noreferrer"
-											        style={{ color: '#0073aa', textDecoration: 'none' }}
-											    >
-											        View
-											    </a>
+												<span>Next Payment: {subscription.next_payment ? formatDate(subscription.next_payment) : 'N/A'}</span>
+												<span style={{ margin: '0 8px' }}>-</span>
+												<a
+													href={subscription?.permalink.replace(/&amp;/g, '&')}
+													target="_blank"
+													rel="noopener noreferrer"
+													style={{ color: '#0073aa', textDecoration: 'none' }}
+												>
+													View
+												</a>
 											</div>
 										)
 									)}
