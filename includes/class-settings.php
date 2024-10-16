@@ -134,7 +134,19 @@ class WCPSM_Settings {
 	 * @return void
 	 */
 	public function sd_menu() {
-		add_options_page( __( 'Migration Settings', 'sd-scaffold-plugin' ), __( 'Migration Settings', 'sd-scaffold-plugin' ), 'manage_options', 'sd-settings-page', array( $this, 'settings_page' ), 10 );
+		
+	    if ( ! class_exists( 'WC_Payments' ) ) {
+	        return;
+	    }
+		
+		add_submenu_page(
+			'woocommerce',
+			__( 'Subscription Payment Method Migration', 'wcpay-subscriptions-migration' ),
+			__( 'Subscription Payment Method Migration', 'wcpay-subscriptions-migration' ),
+			'manage_woocommerce',
+			'sd-settings-page',
+			array( $this, 'settings_page' )
+		);
 	}
 
 	/**
@@ -165,7 +177,7 @@ class WCPSM_Settings {
 
 			$this->save();
 
-			$result = __( 'Settings updated', 'sd-scaffold-plugin' );
+			$result = __( 'Settings updated', 'wcpay-subscriptions-migration' );
 
 			if ( isset( $_POST['k12_tools_change_button'] ) && sanitize_text_field( wp_unslash( $_POST['k12_tools_change_button'] ) ) ) {
 				$this->maybe_process_tools();
@@ -193,7 +205,7 @@ class WCPSM_Settings {
 					<p><?php echo esc_html( $result ); ?></p>
 				</div>
 			<?php } ?>
-			<h2><?php esc_html_e( 'Migration Settings', 'sd-scaffold-plugin' ); ?></h2>
+			<h2><?php esc_html_e( 'Migration Settings', 'wcpay-subscriptions-migration' ); ?></h2>
 
 			<div id="migration-root"></div>
 			</br>
