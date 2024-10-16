@@ -160,7 +160,9 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 				return $stripe_payment_methods ? true : false;
 			}
 			
-			$token = null;
+			$source_key   = $this->get_source_key( $origin_pm );
+			$customer_key = $this->get_customer_id_key( $origin_pm );
+			$token 		  = null;
 			foreach ( $stripe_payment_methods as $stripe_payment_method ) {
 				
 				if ( $stripe_payment_method['id'] == $new_token ) {
@@ -182,10 +184,12 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 					$token->save();
 				}
 			}
-			
+						
 			if ( $token ) {
 				$subscription->add_payment_token( $token );
 				$subscription->set_payment_method( $destination_pm );
+				$subscription->update_meta_data( $source_key, $new_token );
+				$subscription->update_meta_data( $customer_key, $new_customer );
 				$subscription->update_meta_data( '_wcpsm_origin_pm', $origin_pm );
 				$subscription->update_meta_data( '_wcpsm_migrated_old', md5( "$old_customer:$old_token" ) );
 				$subscription->update_meta_data( '_wcpsm_migrated', md5( "$new_customer:$new_token" ) );
