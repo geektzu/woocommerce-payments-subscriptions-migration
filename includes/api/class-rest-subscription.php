@@ -214,7 +214,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			
 			if ( $result ) {
 				$result  = $this->process_rollback( $subscription );
-				$message = $result ? 'Valid' : 'Rollback Failed';
+				$message = $result ? 'Succeeded' : 'Rollback Failed';
 			}
 			
 			$subscriptions[] = array(
@@ -257,7 +257,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			
 			if ( $result ) {
 				$result  = $this->process_migration( $subscription, $origin_pm, $destination_pm );
-				$message = $result ? 'Valid' : 'Migration Failed';
+				$message = $result ? 'Succeeded' : 'Migration Failed';
 			}
 			
 			$subscriptions[] = array(
