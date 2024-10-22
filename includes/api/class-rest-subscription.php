@@ -990,7 +990,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 			'post_type'      => 'shop_subscription',
 			'posts_per_page' => 5000,
 			'fields'		 => 'ids',
-			'post_status'    => array_keys( wcs_get_subscription_statuses() ),
+			'post_status'    => $this->get_subscription_statuses(),
 			'meta_query'     => array(
 				array(
 					'key'     => '_wcpsm_origin_pm',
@@ -1014,8 +1014,35 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 		return get_posts( $args );
 	}
 	
+	public function get_subscription_statuses() {
+		$statuses = wcs_get_subscription_statuses();
+		
+		if ( isset( $statuses['wc-pending'] ) ) {
+			unset( $statuses['wc-pending'] );
+		}
+		
+		if ( isset( $statuses['wc-cancelled'] ) ) {
+			unset( $statuses['wc-cancelled'] );
+		}
+		
+		if ( isset( $statuses['wc-switched'] ) ) {
+			unset( $statuses['wc-switched'] );
+		}
+		
+		if ( isset( $statuses['wc-expired'] ) ) {
+			unset( $statuses['wc-expired'] );
+		}
+		
+		if ( isset( $statuses['wc-pending-cancel'] ) ) {
+			unset( $statuses['wc-pending-cancel'] );
+		}
+				
+		return array_keys( $statuses );
+	}
+	
 	private function get_subscriptions_by_payment_method( $method ) {
-			
+		
+		$statuses 		 = $this->get_subscription_statuses();
 		$methods 		 = $this->get_equivalent_methods( $method );
 		$subscriptions   = array();
 		$is_hpos_enabled = $this->is_hpos();		
@@ -1024,7 +1051,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 				'post_type'      => 'shop_subscription',
 				'posts_per_page' => 5000,
 				'fields'		 => 'ids',
-				'post_status'    => array_keys( wcs_get_subscription_statuses() ),
+				'post_status'    => $statuses,
 				'meta_query'     => array(
 					array(
 						'key'     => '_wc_dp_payment_token',
@@ -1047,12 +1074,12 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 				global $wpdb;
 				$table_name = $wpdb->prefix . 'wc_orders';
 	
-				// Prepare placeholders for SQL IN clause
-				$placeholders = implode( ',', array_fill( 0, count( $methods ), '%s' ) );
-								
+				$statuses_placeholders = implode( ',', array_fill( 0, count( $statuses ), '%s' ) );
+				$methods_placeholders  = implode( ',', array_fill( 0, count( $methods ), '%s' ) );
+				
 				$query = $wpdb->prepare(
-			        "SELECT * FROM $table_name WHERE type = %s AND payment_method IN ($placeholders) LIMIT 5000",
-			        array_merge( array( 'shop_subscription' ), $methods ) // First is the type, then the methods
+			        "SELECT id FROM $table_name WHERE type = %s AND status IN ($statuses_placeholders) AND payment_method IN ($methods_placeholders) LIMIT 5000",
+			        array_merge( array( 'shop_subscription' ), $statuses, $methods )
 			    );
 				
 				$subscriptions = $wpdb->get_col( $query );
@@ -1061,7 +1088,7 @@ class WCPSM_Rest_Subscription extends WP_REST_Controller {
 					'post_type'      => 'shop_subscription',
 					'posts_per_page' => 5000,
 					'fields'		 => 'ids',
-					'post_status'    => array_keys( wcs_get_subscription_statuses() ),
+					'post_status'    => $statuses,
 					'meta_query'     => array(
 						array(
 							'key'     => '_payment_method', // Meta key for payment method
